@@ -74,6 +74,7 @@ if [ ! -f "$kit_root/Package.swift" ]; then
   echo "Keep easybar and easybar-kit as sibling directories or set EASYBAR_KIT_ROOT." >&2
   exit 1
 fi
+kit_root="$(cd -- "$kit_root" && pwd -P)"
 
 case "$dist_dir" in
   /*) ;;
@@ -116,6 +117,49 @@ require_command rsvg-convert "Install librsvg with: brew install librsvg"
 require_command magick "Install ImageMagick with: brew install imagemagick"
 require_command sips
 require_command iconutil
+
+dependency_override_added=false
+
+restore_dependency_override() {
+  local status=$?
+  trap - EXIT
+
+  if [ "$dependency_override_added" = true ]; then
+    echo "Restoring EasyBar package dependency state"
+    if ! (cd "$project_root" && swift package unedit easybar-kit --force >/dev/null); then
+      echo "Failed to restore EasyBarKit dependency state" >&2
+      status=1
+    fi
+  fi
+
+  exit "$status"
+}
+trap restore_dependency_override EXIT
+
+resolve_easybar_kit_dependency_path() {
+  (cd "$project_root" && swift package show-dependencies --format json) |
+    python3 -c 'import json, os, sys
+root = json.load(sys.stdin)
+stack = [root]
+while stack:
+    item = stack.pop()
+    if item.get("identity") == "easybar-kit":
+        print(os.path.realpath(item["path"]))
+        raise SystemExit(0)
+    stack.extend(item.get("dependencies", []))
+raise SystemExit("easybar-kit dependency not found")'
+}
+
+current_kit_dependency="$(resolve_easybar_kit_dependency_path)"
+if [ "$current_kit_dependency" != "$kit_root" ]; then
+  echo "Using local EasyBarKit checkout: $kit_root"
+  (cd "$project_root" && swift package edit easybar-kit --path "$kit_root")
+  dependency_override_added=true
+fi
+
+build_version_file="$kit_root/.build/easybar-build-version"
+mkdir -p "$(dirname "$build_version_file")"
+printf '%s\n' "$version" >"$build_version_file"
 
 rm -rf "$dist_dir"
 mkdir -p "$dist_dir"
@@ -188,6 +232,18 @@ cp "$kit_build_dir/EasyBarLuaRuntime" "$lua_runtime_bin"
 cp "$kit_build_dir/EasyBarCtl" "$cli_bin"
 cp "$kit_build_dir/EasyBarCalendarAgent" "$calendar_bin"
 cp "$kit_build_dir/EasyBarNetworkAgent" "$network_bin"
+
+app_version_output="$("$app_bin" --version)"
+cli_version_output="$("$cli_bin" --version)"
+if [ "$app_version_output" != "EasyBar $version" ]; then
+  echo "EasyBar binary version mismatch: expected 'EasyBar $version', got '$app_version_output'" >&2
+  exit 1
+fi
+if [ "$cli_version_output" != "easybar $version" ]; then
+  echo "EasyBar CLI version mismatch: expected 'easybar $version', got '$cli_version_output'" >&2
+  exit 1
+fi
+echo "Verified local binary versions: $app_version_output; $cli_version_output"
 
 echo "Staging EasyBarKit runtime resources"
 require_file "$kit_root/Sources/EasyBarKit/Lua/runtime.lua" "runtime.lua"

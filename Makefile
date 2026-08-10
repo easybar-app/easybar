@@ -27,7 +27,7 @@ NEXT_MAJOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(
 .DEFAULT_GOAL := help
 
 .PHONY: help build test check check-concurrency run support \
-        bundle-local install-local uninstall-local stop restart-app \
+        bundle-local install-local uninstall-local stop restart-app print-local-version \
         fmt fmt-swift fmt-md fmt-yaml fmt-json lint lint-swift \
         clean clean-dist \
         tag-patch tag-minor tag-major push-tags tag
@@ -63,7 +63,7 @@ run: support ## Run EasyBar directly from the source checkout.
 	@$(SWIFT) run EasyBar
 
 bundle-local: ## Build a complete local EasyBar.app plus shared support artifacts.
-	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)")"; \
+	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
 		echo "Building local EasyBar version $$local_version"; \
 		scripts/build/local-bundle.sh \
 			--kit-root "$(EASYBAR_KIT_ROOT)" \
@@ -95,6 +95,9 @@ stop: ## Stop EasyBar and its locally installed helper agents.
 
 restart-app: stop ## Restart the locally installed EasyBar application.
 	@open "$(LOCAL_APP_DIR)/EasyBar.app"
+
+print-local-version: ## Print the Git-derived version used by install-local.
+	@scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)"
 
 ##@ Formatting
 
