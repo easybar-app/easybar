@@ -107,7 +107,15 @@ require_dir() {
   fi
 }
 
+stage_writable_file() {
+  local source="$1"
+  local destination="$2"
+
+  install -m 0644 "$source" "$destination"
+}
+
 require_command swift
+require_command install
 require_command codesign
 require_command lipo
 require_command rsvg-convert "Install librsvg with: brew install librsvg"
@@ -304,12 +312,12 @@ require_file "$kit_root/Sources/EasyBarKit/Theme/theme_tokens.json" "theme token
 require_file "$kit_root/Sources/EasyBarKit/Assets/easybar-menubar.svg" "menu bar icon"
 require_dir "$kit_root/themes" "themes directory"
 
-cp "$kit_root/Sources/EasyBarKit/Lua/runtime.lua" "$app_resource_dir/Lua/runtime.lua"
-cp "$kit_root/Sources/EasyBarKit/Lua/easybar_api.lua" "$app_resource_dir/Lua/easybar_api.lua"
+stage_writable_file "$kit_root/Sources/EasyBarKit/Lua/runtime.lua" "$app_resource_dir/Lua/runtime.lua"
+stage_writable_file "$kit_root/Sources/EasyBarKit/Lua/easybar_api.lua" "$app_resource_dir/Lua/easybar_api.lua"
 cp -R "$kit_root/Sources/EasyBarKit/Lua/easybar" "$app_resource_dir/Lua/easybar"
-cp "$kit_root/Sources/EasyBarKit/Events/event_catalog.json" "$app_resource_dir/Events/event_catalog.json"
-cp "$kit_root/Sources/EasyBarKit/Theme/theme_tokens.json" "$app_resource_dir/ThemeTokens/theme_tokens.json"
-cp "$kit_root/Sources/EasyBarKit/Assets/easybar-menubar.svg" "$app_resource_dir/Assets/easybar-menubar.svg"
+stage_writable_file "$kit_root/Sources/EasyBarKit/Events/event_catalog.json" "$app_resource_dir/Events/event_catalog.json"
+stage_writable_file "$kit_root/Sources/EasyBarKit/Theme/theme_tokens.json" "$app_resource_dir/ThemeTokens/theme_tokens.json"
+stage_writable_file "$kit_root/Sources/EasyBarKit/Assets/easybar-menubar.svg" "$app_resource_dir/Assets/easybar-menubar.svg"
 cp -R "$kit_root/themes/." "$app_themes_dir/"
 
 python3 "$project_root/scripts/build/stamp.py" lua-api \
@@ -321,9 +329,9 @@ require_file "$project_root/Sources/EasyBarApp/Info.plist" "EasyBar Info.plist"
 require_file "$kit_root/Sources/EasyBarCalendarAgent/Info.plist" "calendar agent Info.plist"
 require_file "$kit_root/Sources/EasyBarNetworkAgent/Info.plist" "network agent Info.plist"
 
-cp "$project_root/Sources/EasyBarApp/Info.plist" "$app_plist"
-cp "$kit_root/Sources/EasyBarCalendarAgent/Info.plist" "$calendar_plist"
-cp "$kit_root/Sources/EasyBarNetworkAgent/Info.plist" "$network_plist"
+stage_writable_file "$project_root/Sources/EasyBarApp/Info.plist" "$app_plist"
+stage_writable_file "$kit_root/Sources/EasyBarCalendarAgent/Info.plist" "$calendar_plist"
+stage_writable_file "$kit_root/Sources/EasyBarNetworkAgent/Info.plist" "$network_plist"
 
 python3 "$project_root/scripts/build/stamp.py" plist \
   --plist "$app_plist" \
