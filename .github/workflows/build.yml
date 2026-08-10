@@ -18,23 +18,96 @@ jobs:
 
   release:
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     permissions:
       contents: write
+      actions: write
+
+    env:
+      BUNDLE_ID: io.github.gi8lino.easybar
+      XCODE_VERSION: "26"
 
     steps:
-      - name: Create GitHub release
+      - name: Checkout EasyBar
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Select pinned Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Print toolchain info
         shell: bash
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Install release dependencies
+        shell: bash
+        run: scripts/ci/install-dependencies.sh release
+
+      - name: Derive version from tag
+        id: version
+        shell: bash
+        run: scripts/release/derive-release-vars.sh --tag "${GITHUB_REF_NAME}"
+
+      - name: Cache SwiftPM dependencies
+        uses: actions/cache@v6
+        with:
+          path: |
+            .build/repositories
+            .build/checkouts
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/org.swift.swiftpm
+          key: swiftpm-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.XCODE_VERSION }}-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: |
+            swiftpm-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ env.XCODE_VERSION }}-
+
+      - name: Build and verify release packages
+        shell: bash
+        run: |
+          make release \
+            ARCH=universal \
+            VERSION="${{ steps.version.outputs.version }}" \
+            BUNDLE_ID="${BUNDLE_ID}"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: EasyBar-${{ steps.version.outputs.version }}
+          path: |
+            dist/EasyBar-${{ steps.version.outputs.version }}.zip
+            dist/EasyBarCalendarAgent-${{ steps.version.outputs.version }}.zip
+            dist/EasyBarNetworkAgent-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+      - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+        shell: bash
         run: |
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            echo "Release ${GITHUB_REF_NAME} already exists."
-            exit 0
+          TAG="${{ steps.version.outputs.tag }}"
+          ASSETS=(
+            "dist/EasyBar-${{ steps.version.outputs.version }}.zip"
+            "dist/EasyBarCalendarAgent-${{ steps.version.outputs.version }}.zip"
+            "dist/EasyBarNetworkAgent-${{ steps.version.outputs.version }}.zip"
+          )
+
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" "${ASSETS[@]}" --clobber
+          else
+            gh release create "${TAG}" "${ASSETS[@]}" --verify-tag --generate-notes
           fi
 
-          gh release create "${GITHUB_REF_NAME}" \
-            --verify-tag \
-            --generate-notes \
-            --title "${GITHUB_REF_NAME}"
+      - name: Trigger Homebrew cask update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh workflow run update-homebrew-cask.yml \
+            -f tag="${{ steps.version.outputs.tag }}" \
+            -f version="${{ steps.version.outputs.version }}"

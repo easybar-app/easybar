@@ -6,7 +6,9 @@ PRETTIER_YAML_SOURCES := ".github/**/*.{yml,yaml}"
 PRETTIER_JSON_SOURCES := ".github/**/*.json"
 
 DIST_DIR ?= dist
-BUNDLE_ID ?= com.gi8lino.EasyBar
+BUNDLE_ID ?= io.github.gi8lino.easybar
+ARCH ?= universal
+VERSION ?= dev
 LOCAL_INSTALL_ARCH ?= $(shell uname -m)
 LOCAL_APP_DIR ?= $(HOME)/Applications
 LOCAL_BIN_DIR ?= $(HOME)/.local/bin
@@ -14,6 +16,10 @@ LOCAL_AGENT_DIR ?= $(HOME)/Library/Application Support/EasyBar/Agents
 LOCAL_LAUNCH_AGENT_DIR ?= $(HOME)/Library/LaunchAgents
 LOCAL_LOG_DIR ?= $(HOME)/Library/Logs/EasyBar
 LOCAL_STATE_DIR ?= $(HOME)/Library/Application Support/EasyBar/LocalInstall
+
+PACKAGE_ZIP := $(DIST_DIR)/EasyBar-$(VERSION).zip
+CALENDAR_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarCalendarAgent-$(VERSION).zip
+NETWORK_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarNetworkAgent-$(VERSION).zip
 
 VERSION_PREFIX ?= v
 LATEST_TAG := $(shell git tag --list '$(VERSION_PREFIX)*' --sort=-v:refname | head -n 1)
@@ -26,7 +32,8 @@ NEXT_MAJOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test check check-concurrency run support \
+.PHONY: help build test check check-concurrency check-release-scripts run support \
+        bundle package release verify verify-release print-package-sha256 \
         bundle-local install-local uninstall-local stop restart-app print-local-version \
         fmt fmt-swift fmt-md fmt-yaml fmt-json lint lint-swift \
         clean clean-dist \
@@ -46,7 +53,37 @@ test: ## Run EasyBar frontend unit tests.
 check-concurrency: ## Build with complete strict concurrency checking.
 	@$(SWIFT) build -Xswiftc -strict-concurrency=complete
 
-check: test check-concurrency lint ## Run the complete repository verification suite.
+check-release-scripts: ## Test Homebrew cask and agent formula generation.
+	@scripts/release/test-homebrew-cask-update.sh
+
+check: test check-concurrency lint check-release-scripts ## Run the complete repository verification suite.
+
+##@ Packaging
+
+bundle: ## Build ad-hoc-signed EasyBar and helper bundles for ARCH.
+	@scripts/build/bundle.sh \
+		--arch "$(ARCH)" \
+		--version "$(VERSION)" \
+		--bundle-id "$(BUNDLE_ID)" \
+		--dist-dir "$(DIST_DIR)"
+
+package: bundle ## Create EasyBar and helper-agent release ZIPs.
+	@scripts/release/package.sh --version "$(VERSION)" --dist-dir "$(DIST_DIR)"
+
+verify: ## Verify the built app, helper bundles, resources, versions, and architectures.
+	@scripts/build/verify-bundle.sh --arch "$(ARCH)" --version "$(VERSION)" --dist-dir "$(DIST_DIR)"
+
+verify-release: package ## Build and verify all release ZIPs.
+	@scripts/release/verify-release.sh \
+		--version "$(VERSION)" \
+		--arch "$(ARCH)" \
+		--dist-dir "$(DIST_DIR)"
+
+release: verify-release ## Build and verify release artifacts.
+	@echo "Release artifacts ready: $(PACKAGE_ZIP) $(CALENDAR_AGENT_PACKAGE_ZIP) $(NETWORK_AGENT_PACKAGE_ZIP)"
+
+print-package-sha256: package ## Print SHA-256 hashes for all release ZIPs.
+	@shasum -a 256 "$(PACKAGE_ZIP)" "$(CALENDAR_AGENT_PACKAGE_ZIP)" "$(NETWORK_AGENT_PACKAGE_ZIP)"
 
 ##@ Development
 
@@ -62,11 +99,10 @@ support: ## Build and expose EasyBarKit's Lua runtime helper for direct source-t
 run: support ## Run EasyBar directly from the source checkout.
 	@$(SWIFT) run EasyBar
 
-bundle-local: ## Build a complete local EasyBar.app plus shared support artifacts.
+bundle-local: ## Build a complete local EasyBar.app using the sibling EasyBarKit checkout.
 	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
 		echo "Building local EasyBar version $$local_version"; \
 		scripts/build/local-bundle.sh \
-			--kit-root "$(EASYBAR_KIT_ROOT)" \
 			--arch "$(LOCAL_INSTALL_ARCH)" \
 			--version "$$local_version" \
 			--bundle-id "$(BUNDLE_ID)" \
@@ -122,10 +158,10 @@ lint-swift: ## Check Swift formatting.
 
 ##@ Cleanup
 
-clean-dist: ## Remove local distribution output.
+clean-dist: ## Remove distribution output.
 	@rm -rf "$(DIST_DIR)"
 
-clean: clean-dist ## Remove SwiftPM and local distribution output.
+clean: clean-dist ## Remove SwiftPM and distribution output.
 	@$(SWIFT) package clean
 	@rm -rf .build
 

@@ -339,6 +339,7 @@ stop_homebrew_service_if_started() {
 
 require_command awk
 require_command ditto
+require_command grep
 require_command launchctl
 require_command open
 require_command xattr
@@ -466,10 +467,35 @@ replace_bundle "$network_agent_source" "$network_agent_destination"
 echo "Installing CLI into $cli_destination"
 replace_binary "$cli_source" "$cli_destination"
 
-xattr -dr com.apple.quarantine "$app_destination" >/dev/null 2>&1 || true
-xattr -dr com.apple.quarantine "$calendar_agent_destination" >/dev/null 2>&1 || true
-xattr -dr com.apple.quarantine "$network_agent_destination" >/dev/null 2>&1 || true
-xattr -d com.apple.quarantine "$cli_destination" >/dev/null 2>&1 || true
+clear_quarantine_recursive() {
+  local path="$1"
+  local label="$2"
+
+  xattr -dr com.apple.quarantine "$path" >/dev/null 2>&1 || true
+
+  if xattr -lr "$path" 2>/dev/null | grep -Fq "com.apple.quarantine"; then
+    echo "Failed to remove quarantine from ${label}: ${path}" >&2
+    exit 1
+  fi
+}
+
+clear_quarantine_file() {
+  local path="$1"
+  local label="$2"
+
+  xattr -d com.apple.quarantine "$path" >/dev/null 2>&1 || true
+
+  if xattr -p com.apple.quarantine "$path" >/dev/null 2>&1; then
+    echo "Failed to remove quarantine from ${label}: ${path}" >&2
+    exit 1
+  fi
+}
+
+echo "Removing quarantine from local EasyBar artifacts"
+clear_quarantine_recursive "$app_destination" "EasyBar.app"
+clear_quarantine_recursive "$calendar_agent_destination" "calendar agent"
+clear_quarantine_recursive "$network_agent_destination" "network agent"
+clear_quarantine_file "$cli_destination" "EasyBar CLI"
 
 write_launch_agent \
   "$calendar_plist" \
