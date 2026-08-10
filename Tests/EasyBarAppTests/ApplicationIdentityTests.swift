@@ -12,6 +12,7 @@ final class ApplicationIdentityTests: XCTestCase {
     XCTAssertEqual(identity.logFileName, "easybar.out")
     XCTAssertEqual(identity.defaultConfigRelativePath, ".config/easybar/config.toml")
     XCTAssertEqual(identity.defaultRuntimeRelativePath, ".local/state/easybar/runtime")
+    XCTAssertEqual(identity.builtInSurfacePolicy, .all)
     XCTAssertTrue(identity.defaultEnvironment.isEmpty)
   }
 }

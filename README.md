@@ -127,3 +127,8 @@ This repository owns only the custom-bar surface:
 - `BarContentView`: left/center/right layout and bar background styling.
 
 Everything rendered inside those slots comes from `EasyBarPresentationModel` in EasyBarKit.
+The EasyBar frontend opts into the complete EasyBarKit built-in surface set (`.all`) in addition to
+Lua widgets. Lua remains the only public/custom widget extension model; the built-ins are
+product-owned implementation details rather than a second plugin API.
+
+

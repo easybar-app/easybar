@@ -9,7 +9,8 @@ enum EasyBarAppMain {
     loggerLabel: "easybar",
     logFileName: "easybar.out",
     defaultConfigRelativePath: ".config/easybar/config.toml",
-    defaultRuntimeRelativePath: ".local/state/easybar/runtime"
+    defaultRuntimeRelativePath: ".local/state/easybar/runtime",
+    builtInSurfacePolicy: .all
   )
 
   @MainActor
