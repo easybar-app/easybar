@@ -7,6 +7,15 @@ PRETTIER_YAML_SOURCES := ".github/**/*.{yml,yaml}"
 PRETTIER_JSON_SOURCES := ".github/**/*.json"
 LOCAL_BIN_DIR ?= $(HOME)/.local/bin
 
+VERSION_PREFIX ?= v
+LATEST_TAG := $(shell git tag --list '$(VERSION_PREFIX)*' --sort=-v:refname | head -n 1)
+CURRENT_VERSION := $(if $(LATEST_TAG),$(patsubst $(VERSION_PREFIX)%,%,$(LATEST_TAG)),0.0.0)
+CURRENT_CORE_VERSION := $(firstword $(subst -, ,$(CURRENT_VERSION)))
+
+NEXT_PATCH := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m}.{n}.{p+1}")')
+NEXT_MINOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m}.{n+1}.0")')
+NEXT_MAJOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m+1}.0.0")')
+
 .DEFAULT_GOAL := help
 
 .PHONY: help build test check check-concurrency run support install-local \
@@ -73,3 +82,24 @@ lint-swift: ## Check Swift formatting.
 clean: ## Remove SwiftPM build output.
 	@$(SWIFT) package clean
 	@rm -rf .build
+
+##@ Tagging
+
+tag-patch: ## Create the next patch tag locally.
+	@git tag -a "$(VERSION_PREFIX)$(NEXT_PATCH)" -m "Release $(VERSION_PREFIX)$(NEXT_PATCH)"
+	@echo "Created tag $(VERSION_PREFIX)$(NEXT_PATCH)"
+
+tag-minor: ## Create the next minor tag locally.
+	@git tag -a "$(VERSION_PREFIX)$(NEXT_MINOR)" -m "Release $(VERSION_PREFIX)$(NEXT_MINOR)"
+	@echo "Created tag $(VERSION_PREFIX)$(NEXT_MINOR)"
+
+tag-major: ## Create the next major tag locally.
+	@git tag -a "$(VERSION_PREFIX)$(NEXT_MAJOR)" -m "Release $(VERSION_PREFIX)$(NEXT_MAJOR)"
+	@echo "Created tag $(VERSION_PREFIX)$(NEXT_MAJOR)"
+
+push-tags: ## Push commits and tags to origin.
+	@git push --follow-tags
+
+tag: ## Show latest tag.
+	@echo "Latest version: $(LATEST_TAG)"
+
