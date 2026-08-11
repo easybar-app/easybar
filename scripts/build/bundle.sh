@@ -2,6 +2,7 @@
 set -Eeuo pipefail
 trap 'echo "bundle failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
+# Prints supported bundle options to standard error.
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/build/bundle.sh [options]
@@ -74,6 +75,7 @@ case "$dist_dir" in
 *) dist_dir="$project_root/$dist_dir" ;;
 esac
 
+# Exits with an installation hint when a required executable is unavailable.
 require_command() {
   local command_name="$1"
   local hint="${2:-}"
@@ -87,6 +89,7 @@ require_command() {
   fi
 }
 
+# Exits when a required regular file is missing.
 require_file() {
   local path="$1"
   local label="$2"
@@ -97,6 +100,7 @@ require_file() {
   fi
 }
 
+# Exits when a required directory is missing.
 require_dir() {
   local path="$1"
   local label="$2"
@@ -107,6 +111,7 @@ require_dir() {
   fi
 }
 
+# Copies one resource into the bundle with deterministic writable permissions.
 stage_writable_file() {
   local source="$1"
   local destination="$2"
@@ -123,6 +128,7 @@ require_command magick "Install ImageMagick with: brew install imagemagick"
 require_command sips
 require_command iconutil
 
+# Resolves the EasyBarKit checkout selected by SwiftPM.
 resolve_easybar_kit_dependency_path() {
   (
     cd "$project_root"
@@ -141,10 +147,22 @@ raise SystemExit("easybar-kit dependency not found")'
 }
 
 dependency_override_added=false
+build_version_file=""
+build_version_file_existed=false
+previous_build_version=""
 
-restore_dependency_override() {
+# Restores package-edit and EasyBarKit version-file state after bundling.
+restore_build_state() {
   local status=$?
   trap - EXIT
+
+  if [ -n "$build_version_file" ]; then
+    if [ "$build_version_file_existed" = true ]; then
+      printf '%s\n' "$previous_build_version" >"$build_version_file"
+    else
+      rm -f "$build_version_file"
+    fi
+  fi
 
   if [ "$dependency_override_added" = true ]; then
     echo "Restoring EasyBar package dependency state"
@@ -156,7 +174,7 @@ restore_dependency_override() {
 
   exit "$status"
 }
-trap restore_dependency_override EXIT
+trap restore_build_state EXIT
 
 resolved_kit_root="$(resolve_easybar_kit_dependency_path)"
 if [ -n "$kit_root" ]; then
@@ -176,6 +194,10 @@ else
 fi
 
 build_version_file="$kit_root/.build/easybar-build-version"
+if [ -f "$build_version_file" ]; then
+  build_version_file_existed=true
+  previous_build_version="$(<"$build_version_file")"
+fi
 mkdir -p "$(dirname "$build_version_file")"
 printf '%s\n' "$version" >"$build_version_file"
 
@@ -226,6 +248,7 @@ mkdir -p \
   "$network_macos" \
   "$network_resources"
 
+# Builds one frontend product for an architecture and returns its binary path.
 root_product_path() {
   local build_arch="$1"
   local product="$2"
@@ -239,6 +262,7 @@ root_product_path() {
   printf '%s/%s\n' "$bin_dir" "$product"
 }
 
+# Builds one EasyBarKit product for an architecture and returns its binary path.
 kit_product_path() {
   local build_arch="$1"
   local product="$2"
@@ -249,6 +273,7 @@ kit_product_path() {
   printf '%s/%s\n' "$bin_dir" "$product"
 }
 
+# Copies one architecture-specific product into its final bundle location.
 stage_product() {
   local owner="$1"
   local product="$2"

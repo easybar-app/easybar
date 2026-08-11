@@ -10,6 +10,7 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
   private let presentationModel: EasyBarPresentationModel
   private let hostingView: BarHostingView<AnyView>
 
+  /// Creates the fixed top-edge window for one shared EasyBar surface context.
   init(context: EasyBarSurfaceContext) {
     self.context = context
     self.presentationModel = context.presentationModel
@@ -67,11 +68,13 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     }
   }
 
+  /// Storyboard decoding is unsupported because the bar is assembled programmatically.
   @available(*, unavailable)
   required init?(coder: NSCoder) {
     nil
   }
 
+  /// Rebuilds the hosted SwiftUI root and reapplies screen-dependent bar geometry.
   func reloadLayout() {
     guard let window else {
       context.logger.warn("bar window reloadLayout skipped because window is unavailable")
@@ -91,6 +94,7 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     hostingView.frame = NSRect(origin: .zero, size: frame.size)
   }
 
+  /// Presents the bar above normal application windows without activating it.
   func present() {
     guard let window else {
       context.logger.warn("bar window present skipped because window is unavailable")
@@ -101,15 +105,18 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     window.orderFrontRegardless()
   }
 
+  /// Removes the bar from the screen while preserving its window state.
   func hide() {
     window?.orderOut(nil)
   }
 
+  /// Closes the bar window and releases its AppKit resources.
   func stop() {
     window?.orderOut(nil)
     close()
   }
 
+  /// Computes the screen frame used by the current bar appearance.
   private static func makeFrame(
     for screen: NSScreen,
     style: EasyBarPresentationModel.BarStyle

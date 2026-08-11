@@ -17,7 +17,8 @@ git -C "${tap_dir}" init -q
 touch "${tap_dir}/Formula/easybar-calendar-agent.rb" \
   "${tap_dir}/Formula/easybar-network-agent.rb"
 git -C "${tap_dir}" add Formula
-git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com commit -qm fixture
+git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
+  -c commit.gpgsign=false commit -qm fixture
 
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
@@ -91,7 +92,8 @@ if git -C "${tap_dir}" diff --cached --quiet; then
 fi
 
 # The commit helper must also work on subsequent releases.
-git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com commit -qm "publish cask"
+git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
+  -c commit.gpgsign=false commit -qm "publish cask"
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \

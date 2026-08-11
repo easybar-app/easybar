@@ -12,10 +12,12 @@ final class BarPanel: NSPanel {
     false
   }
 
+  /// Preserves the explicitly calculated full-width frame instead of applying AppKit constraints.
   override func constrainFrameRect(_ frameRect: NSRect, to screen: NSScreen?) -> NSRect {
     frameRect
   }
 
+  /// Opens the shared bar context menu and exposes developer items while Shift is held.
   override func rightMouseUp(with event: NSEvent) {
     let showDeveloperSection = event.modifierFlags.contains(.shift)
 

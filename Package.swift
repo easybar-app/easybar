@@ -37,6 +37,9 @@ let package = Package(
         ),
       ],
       path: "Sources/EasyBarApp",
+      exclude: [
+        "Info.plist"
+      ],
       swiftSettings: strictConcurrencySettings
     ),
     .testTarget(

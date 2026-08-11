@@ -13,6 +13,7 @@ enum EasyBarAppMain {
     builtInSurfacePolicy: .all
   )
 
+  /// Starts the shared runtime with the customizable full-width window surface.
   @MainActor
   static func main() {
     EasyBarApplication.run(identity: identity) { context in
