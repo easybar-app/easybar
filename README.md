@@ -48,4 +48,4 @@ The full documentation is available at [easybar.dev](https://easybar.dev/).
 
 ## License
 
-Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+Licensed under the [Apache License 2.0](./LICENSE).
