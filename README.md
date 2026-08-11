@@ -1,132 +1,51 @@
 # EasyBar
 
-EasyBar is the customizable full-width macOS top bar frontend powered by
-[`easybar-kit`](../easybar-kit).
+![EasyBar screenshot](https://easybar.dev/assets/bar.png)
 
-EasyBar owns the customizable top-bar presentation and application packaging. Lua execution, widget
-rendering, events, popups, context menus, themes, inbox state, package management, and system
-integrations are provided by EasyBarKit. The sibling `easybar-native` frontend consumes the same
-shared runtime.
+EasyBar is a lightweight, scriptable macOS status bar built with SwiftUI and Lua. It combines native
+widgets with custom Lua widgets and integrates with AeroSpace.
 
-## Repository layout
+## Features
 
-```text
-../easybar-kit      shared runtime/widget framework and support executables
-../easybar          this customizable top-bar frontend and release packaging
-../easybar-native   native NSStatusItem frontend
-../widgets          shared Lua packages
-```
+- Native widgets for Spaces, apps, system status, calendar, and more
+- Scriptable Lua widgets with events, popups, groups, and context menus
+- Installable Lua widgets and libraries from the official package registry
+- Shared Inbox with unread state, grouping, Markdown, and widget actions
+- File-based TOML themes and comment-preserving configuration updates
+- AeroSpace integration and separate calendar and network helper agents
+- Menu-bar controller and CLI for runtime control and diagnostics
 
-The normal Swift package dependency uses the released EasyBarKit version from `Package.swift`.
-Local source-tree commands such as `make run` and `make install-local` use the sibling
-`../easybar-kit` checkout so both repositories can be tested together.
+See more screenshots in the [documentation](https://easybar.dev/).
 
-## Build and test
+## Requirements
 
-```bash
-make build
-make test
-make check
-```
+- macOS 14 Sonoma or newer
+- [Homebrew](https://brew.sh/) for installation
+- AeroSpace 0.21.0 or newer when using AeroSpace-backed widgets
 
-`make check` also validates the Homebrew cask and helper-agent formula generator used by releases.
-
-To run directly from source:
+## Installation
 
 ```bash
-make run
+brew tap easybar-app/tap
+brew install --cask easybar-app/tap/easybar
+open -a EasyBar
 ```
 
-`make run` builds EasyBarKit's `EasyBarLuaRuntime` helper first and exposes it to EasyBar's debug
-build directory.
+See the [installation guide](https://easybar.dev/products/easybar/installation/) for upgrades,
+verification, and removal.
 
-## Install the current checkout
+## Documentation
 
-Install a complete local development build with:
+The full documentation is available at [easybar.dev](https://easybar.dev/).
 
-```bash
-make install-local
-```
+- [Quick start](https://easybar.dev/products/easybar/quick-start/)
+- [Configuration](https://easybar.dev/products/easybar/configuration/overview/)
+- [Themes](https://easybar.dev/products/easybar/configuration/themes/)
+- [Lua widgets](https://easybar.dev/lua/overview/)
+- [Widget packages](https://easybar.dev/widget-store/overview/)
+- [Runtime and troubleshooting](https://easybar.dev/products/easybar/runtime/troubleshooting/)
+- [Development](https://easybar.dev/internals/development/)
 
-The local build contains:
+## License
 
-```text
-~/Applications/EasyBar.app
-~/.local/bin/easybar
-~/Library/Application Support/EasyBar/Agents/EasyBarCalendarAgent.app
-~/Library/Application Support/EasyBar/Agents/EasyBarNetworkAgent.app
-~/Library/LaunchAgents/io.github.gi8lino.easybar.local.*.plist
-```
-
-The build receives a Git-derived version containing both the EasyBar and EasyBarKit commits, for
-example:
-
-```text
-0.53.2-dev.a1b2c3d4.kit.e5f6a7b8
-```
-
-If either checkout has staged, unstaged, or untracked changes, the version ends in `-dirty`.
-Inspect it before installing with:
-
-```bash
-make print-local-version
-```
-
-Local bundles are ad-hoc signed and are not notarized. After copying the app, helper agents, and
-CLI into their install destinations, the installer removes `com.apple.quarantine` and verifies that
-the attribute is gone before starting the agents or launching EasyBar.
-
-Override the default locations or architecture when needed:
-
-```bash
-make install-local LOCAL_INSTALL_ARCH=universal
-make install-local LOCAL_APP_DIR=/Applications
-make install-local LOCAL_BIN_DIR=/usr/local/bin
-make install-local EASYBAR_KIT_ROOT=/path/to/easybar-kit
-```
-
-Remove the standalone installation and restore the Homebrew agent service states recorded before
-the first local install with:
-
-```bash
-make uninstall-local
-```
-
-## Release packaging
-
-Build the same release artifacts produced by GitHub Actions with:
-
-```bash
-make release ARCH=universal VERSION=0.54.0
-```
-
-The release produces:
-
-```text
-dist/EasyBar-0.54.0.zip
-dist/EasyBarCalendarAgent-0.54.0.zip
-dist/EasyBarNetworkAgent-0.54.0.zip
-```
-
-A pushed `v*` tag runs the release workflow on macOS, verifies the repository, builds and uploads
-all three archives to the GitHub release, and then dispatches `update-homebrew-cask.yml`. That
-workflow downloads the immutable release archives, calculates their SHA-256 values, updates the
-EasyBar cask plus the calendar/network agent formulae in `easybar-app/homebrew-tap`, and commits the
-changes with `HOMEBREW_TAP_TOKEN`.
-
-The Homebrew definitions also remove `com.apple.quarantine` from the downloaded EasyBar app, CLI,
-and helper-agent bundles because the published artifacts are currently ad-hoc signed rather than
-notarized.
-
-## Presentation boundary
-
-This repository owns only the custom-bar surface:
-
-- `BarPanel`: the non-activating full-width AppKit panel.
-- `BarWindowController`: screen placement and lifecycle.
-- `BarContentView`: left/center/right layout and bar background styling.
-
-Everything rendered inside those slots comes from `EasyBarPresentationModel` in EasyBarKit.
-The EasyBar frontend opts into the complete EasyBarKit built-in surface set (`.all`) in addition to
-Lua widgets. Lua remains the only public/custom widget extension model; the built-ins are
-product-owned implementation details rather than a second plugin API.
+Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
