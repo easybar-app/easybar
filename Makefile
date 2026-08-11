@@ -53,7 +53,8 @@ test: ## Run EasyBar frontend unit tests.
 check-concurrency: ## Build with complete strict concurrency checking.
 	@$(SWIFT) build -Xswiftc -strict-concurrency=complete
 
-check-release-scripts: ## Test Homebrew cask and agent formula generation.
+check-release-scripts: ## Test release archives, Homebrew cask, and agent formula generation.
+	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-homebrew-cask-update.sh
 
 check: test check-concurrency lint check-release-scripts ## Run the complete repository verification suite.

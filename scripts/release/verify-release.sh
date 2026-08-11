@@ -2,6 +2,9 @@
 set -Eeuo pipefail
 trap 'echo "release verification failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$script_dir/archive-utils.sh"
+
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/release/verify-release.sh [--version <version>] [--arch <arm64|x86_64|universal>] [--dist-dir <dir>]
@@ -87,13 +90,13 @@ verify_agent_archive() {
   local app_name="$3"
   local expected_entry="${wrapper}/${app_name}.app/Contents/MacOS/${app_name}"
 
-  if ! unzip -Z1 "$archive" | grep -Fxq "$expected_entry"; then
+  if ! archive_contains_exact_entry "$archive" "$expected_entry"; then
     echo "Agent archive does not contain expected Homebrew layout: ${expected_entry}" >&2
     unzip -Z1 "$archive" >&2
     exit 1
   fi
 
-  if unzip -Z1 "$archive" | grep -Fqx "${app_name}.app/Contents/MacOS/${app_name}"; then
+  if archive_contains_exact_entry "$archive" "${app_name}.app/Contents/MacOS/${app_name}"; then
     echo "Agent archive must use a wrapper directory so Homebrew preserves ${app_name}.app" >&2
     exit 1
   fi
