@@ -22,6 +22,17 @@ source=$1
 destination=$2
 rm -rf "$destination"
 mkdir -p "$(dirname -- "$destination")"
+
+if [ -n "${FAKE_FAIL_DITTO_MARKER:-}" ] && \
+  [ -n "${FAKE_FAIL_DITTO_MATCH:-}" ] && \
+  [[ "$destination" == *"$FAKE_FAIL_DITTO_MATCH"* ]] && \
+  [ ! -e "$FAKE_FAIL_DITTO_MARKER" ]; then
+  mkdir -p "$destination"
+  : >"$destination/partial-copy"
+  : >"$FAKE_FAIL_DITTO_MARKER"
+  exit 1
+fi
+
 cp -R "$source" "$destination"
 EOF_DITTO
 
@@ -205,6 +216,31 @@ installer_args=(
   --no-launch
 )
 
+assert_previous_installation_restored() {
+  [ "$("$app_dir/EasyBar.app/Contents/MacOS/EasyBar" --version)" = "EasyBar 0.9.0" ]
+  [ "$("$bin_dir/easybar" --version)" = "easybar 0.9.0" ]
+  [ -f "$app_dir/EasyBar.app/old-marker" ]
+  [ -f "$agent_dir/EasyBarCalendarAgent.app/old-marker" ]
+  [ -f "$agent_dir/EasyBarNetworkAgent.app/old-marker" ]
+  [ ! -e "$app_dir/EasyBar.app/source-marker" ]
+  [ ! -e "$agent_dir/EasyBarCalendarAgent.app/source-marker" ]
+  [ ! -e "$agent_dir/EasyBarNetworkAgent.app/source-marker" ]
+  cmp -s "$calendar_plist" "$tmp_dir/calendar.plist.expected"
+  cmp -s "$network_plist" "$tmp_dir/network.plist.expected"
+  [ -f "$launchctl_state/$calendar_label" ]
+  [ -f "$launchctl_state/$network_label" ]
+  [ ! -e "$service_state_file" ]
+
+  local leftovers
+  leftovers="$(find "$install_root" \
+    \( -name '*.local-backup.*' -o -name '*.local-install.*' \) -print)"
+  if [ -n "$leftovers" ]; then
+    echo "Rollback left temporary installation paths:" >&2
+    printf '%s\n' "$leftovers" >&2
+    exit 1
+  fi
+}
+
 if output="$({
   PATH="$fake_bin:$PATH" \
     FAKE_LAUNCHCTL_STATE="$launchctl_state" \
@@ -219,26 +255,24 @@ if [[ "$output" != *"restoring the previous installation"* ]]; then
   exit 1
 fi
 
-[ "$("$app_dir/EasyBar.app/Contents/MacOS/EasyBar" --version)" = "EasyBar 0.9.0" ]
-[ "$("$bin_dir/easybar" --version)" = "easybar 0.9.0" ]
-[ -f "$app_dir/EasyBar.app/old-marker" ]
-[ -f "$agent_dir/EasyBarCalendarAgent.app/old-marker" ]
-[ -f "$agent_dir/EasyBarNetworkAgent.app/old-marker" ]
-[ ! -e "$app_dir/EasyBar.app/source-marker" ]
-[ ! -e "$agent_dir/EasyBarCalendarAgent.app/source-marker" ]
-[ ! -e "$agent_dir/EasyBarNetworkAgent.app/source-marker" ]
-cmp -s "$calendar_plist" "$tmp_dir/calendar.plist.expected"
-cmp -s "$network_plist" "$tmp_dir/network.plist.expected"
-[ -f "$launchctl_state/$calendar_label" ]
-[ -f "$launchctl_state/$network_label" ]
-[ ! -e "$service_state_file" ]
+assert_previous_installation_restored
 
-leftovers="$(find "$install_root" \( -name '*.local-backup.*' -o -name '*.local-install.*' \) -print)"
-if [ -n "$leftovers" ]; then
-  echo "Rollback left temporary installation paths:" >&2
-  printf '%s\n' "$leftovers" >&2
+ditto_fail_marker="$tmp_dir/calendar-copy-failed"
+if output="$({
+  PATH="$fake_bin:$PATH" \
+    FAKE_LAUNCHCTL_STATE="$launchctl_state" \
+    FAKE_FAIL_DITTO_MARKER="$ditto_fail_marker" \
+    FAKE_FAIL_DITTO_MATCH='.EasyBarCalendarAgent.app.local-install.' \
+    "$installer" "${installer_args[@]}"
+} 2>&1)"; then
+  echo "Expected local installation to fail during calendar-agent copy" >&2
   exit 1
 fi
+if [[ "$output" != *"restoring the previous installation"* ]]; then
+  echo "Expected rollback message after copy failure, got: $output" >&2
+  exit 1
+fi
+assert_previous_installation_restored
 
 PATH="$fake_bin:$PATH" \
   FAKE_LAUNCHCTL_STATE="$launchctl_state" \

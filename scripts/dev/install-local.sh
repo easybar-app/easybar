@@ -243,19 +243,24 @@ replace_bundle() {
   ensure_directory "$parent"
   stage="${parent}/.${destination##*/}.local-install.$$"
 
+  remove_installation_path "$stage"
   if [ -w "$parent" ]; then
-    rm -rf "$stage"
-    ditto "$source" "$stage"
-    rm -rf "$destination"
-    mv "$stage" "$destination"
+    if ! ditto "$source" "$stage" || \
+      ! rm -rf "$destination" || \
+      ! mv "$stage" "$destination"; then
+      remove_installation_path "$stage"
+      return 1
+    fi
     return
   fi
 
   require_command sudo
-  sudo rm -rf "$stage"
-  sudo ditto "$source" "$stage"
-  sudo rm -rf "$destination"
-  sudo mv "$stage" "$destination"
+  if ! sudo ditto "$source" "$stage" || \
+    ! sudo rm -rf "$destination" || \
+    ! sudo mv "$stage" "$destination"; then
+    remove_installation_path "$stage"
+    return 1
+  fi
 }
 
 replace_binary() {
@@ -268,17 +273,24 @@ replace_binary() {
   ensure_directory "$parent"
   stage="${destination}.local-install.$$"
 
+  remove_installation_path "$stage"
   if [ -w "$parent" ]; then
-    cp "$source" "$stage"
-    chmod 0755 "$stage"
-    mv -f "$stage" "$destination"
+    if ! cp "$source" "$stage" || \
+      ! chmod 0755 "$stage" || \
+      ! mv -f "$stage" "$destination"; then
+      remove_installation_path "$stage"
+      return 1
+    fi
     return
   fi
 
   require_command sudo
-  sudo cp "$source" "$stage"
-  sudo chmod 0755 "$stage"
-  sudo mv -f "$stage" "$destination"
+  if ! sudo cp "$source" "$stage" || \
+    ! sudo chmod 0755 "$stage" || \
+    ! sudo mv -f "$stage" "$destination"; then
+    remove_installation_path "$stage"
+    return 1
+  fi
 }
 
 xml_escape() {
@@ -311,7 +323,7 @@ write_launch_agent() {
   escaped_stdout="$(xml_escape "$stdout_path")"
   escaped_stderr="$(xml_escape "$stderr_path")"
 
-  cat >"$stage" <<EOF_PLIST
+  if ! cat >"$stage" <<EOF_PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -349,12 +361,14 @@ write_launch_agent() {
 </dict>
 </plist>
 EOF_PLIST
-
-  if ! plutil -lint "$stage" >/dev/null; then
+  then
     rm -f "$stage"
     return 1
   fi
-  if ! chmod 0644 "$stage" || ! mv -f "$stage" "$plist"; then
+
+  if ! plutil -lint "$stage" >/dev/null || \
+    ! chmod 0644 "$stage" || \
+    ! mv -f "$stage" "$plist"; then
     rm -f "$stage"
     return 1
   fi
@@ -441,12 +455,19 @@ load_homebrew_state() {
 write_homebrew_state() {
   local stage="${service_state_file}.local-install.$$"
 
-  cat >"$stage" <<EOF_STATE
+  if ! cat >"$stage" <<EOF_STATE
 calendar=$brew_calendar_previous_state
 network=$brew_network_previous_state
 EOF_STATE
-  chmod 0600 "$stage"
-  mv -f "$stage" "$service_state_file"
+  then
+    rm -f "$stage"
+    return 1
+  fi
+
+  if ! chmod 0600 "$stage" || ! mv -f "$stage" "$service_state_file"; then
+    rm -f "$stage"
+    return 1
+  fi
 }
 
 stop_homebrew_service_if_started() {
