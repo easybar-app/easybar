@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: update-homebrew-packages
+  cancel-in-progress: false
+
 jobs:
   update-packages:
     runs-on: ubuntu-latest
