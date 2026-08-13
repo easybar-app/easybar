@@ -341,8 +341,10 @@ require_command awk
 require_command ditto
 require_command grep
 require_command launchctl
-require_command open
 require_command xattr
+if [ "$launch_app" = true ]; then
+  require_command open
+fi
 
 app_source="$dist_dir/EasyBar.app"
 calendar_agent_source="$dist_dir/EasyBarCalendarAgent.app"
@@ -453,7 +455,7 @@ stop_homebrew_service_if_started easybar-network-agent
 
 bootout_service "$calendar_label"
 bootout_service "$network_label"
-bash "$project_root/scripts/dev/stop-local.sh" --dist-dir "$dist_dir"
+bash "$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
 
 echo "Installing EasyBar.app into $app_destination"
 replace_bundle "$app_source" "$app_destination"
@@ -520,6 +522,14 @@ launchctl print "$(service_target "$network_label")" >/dev/null
 
 installed_app_version="$("$app_destination/Contents/MacOS/EasyBar" --version)"
 installed_cli_version="$("$cli_destination" --version)"
+app_version="${installed_app_version#EasyBar }"
+cli_version="${installed_cli_version#easybar }"
+if [ "$app_version" = "$installed_app_version" ] || \
+  [ "$cli_version" = "$installed_cli_version" ] || \
+  [ "$app_version" != "$cli_version" ]; then
+  echo "Installed app and CLI versions do not match: $installed_app_version; $installed_cli_version" >&2
+  exit 1
+fi
 echo "Installed $installed_app_version"
 echo "Installed $installed_cli_version"
 

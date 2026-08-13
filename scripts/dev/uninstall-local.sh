@@ -125,6 +125,13 @@ restore_homebrew_service_state() {
   esac
 }
 
+is_valid_homebrew_state() {
+  case "$1" in
+  started | stopped | not-installed) return 0 ;;
+  *) return 1 ;;
+  esac
+}
+
 load_homebrew_state() {
   local key
   local value
@@ -135,6 +142,15 @@ load_homebrew_state() {
     network) brew_network_previous_state="$value" ;;
     esac
   done <"$service_state_file"
+
+  if ! is_valid_homebrew_state "$brew_calendar_previous_state"; then
+    echo "Invalid calendar-agent state in $service_state_file" >&2
+    exit 1
+  fi
+  if ! is_valid_homebrew_state "$brew_network_previous_state"; then
+    echo "Invalid network-agent state in $service_state_file" >&2
+    exit 1
+  fi
 }
 
 require_command launchctl
@@ -159,7 +175,7 @@ fi
 
 launchctl bootout "$user_domain/$calendar_label" >/dev/null 2>&1 || true
 launchctl bootout "$user_domain/$network_label" >/dev/null 2>&1 || true
-bash "$project_root/scripts/dev/stop-local.sh" --dist-dir "$project_root/dist"
+bash "$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
 
 remove_path "$calendar_plist"
 remove_path "$network_plist"

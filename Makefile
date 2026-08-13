@@ -127,8 +127,8 @@ uninstall-local: ## Remove the standalone local EasyBar installation and restore
 		--launch-agent-dir "$(LOCAL_LAUNCH_AGENT_DIR)" \
 		--state-dir "$(LOCAL_STATE_DIR)"
 
-stop: ## Stop EasyBar and its locally installed helper agents.
-	@scripts/dev/stop-local.sh --dist-dir "$(DIST_DIR)"
+stop: ## Stop the locally installed EasyBar application.
+	@scripts/dev/stop-app.sh --app-dir "$(LOCAL_APP_DIR)"
 
 restart-app: stop ## Restart the locally installed EasyBar application.
 	@open "$(LOCAL_APP_DIR)/EasyBar.app"
