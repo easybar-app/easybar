@@ -175,7 +175,7 @@ fi
 
 launchctl bootout "$user_domain/$calendar_label" >/dev/null 2>&1 || true
 launchctl bootout "$user_domain/$network_label" >/dev/null 2>&1 || true
-bash "$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
+"$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
 
 remove_path "$calendar_plist"
 remove_path "$network_plist"
@@ -188,6 +188,7 @@ brew_command="$(command -v brew || true)"
 restore_homebrew_service_state easybar-calendar-agent "$brew_calendar_previous_state"
 restore_homebrew_service_state easybar-network-agent "$brew_network_previous_state"
 remove_path "$service_state_file"
+rmdir "$state_dir" >/dev/null 2>&1 || true
 
 cat <<EOF_SUMMARY
 Local EasyBar installation removed.

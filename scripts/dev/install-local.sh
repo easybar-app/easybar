@@ -248,6 +248,12 @@ service_target() {
   printf 'gui/%s/%s' "$user_id" "$label"
 }
 
+service_is_loaded() {
+  local label="$1"
+
+  launchctl print "$(service_target "$label")" >/dev/null 2>&1
+}
+
 bootout_service() {
   local label="$1"
 
@@ -376,8 +382,17 @@ user_domain="gui/$user_id"
 brew_command="$(command -v brew || true)"
 brew_calendar_previous_state=""
 brew_network_previous_state=""
+calendar_local_service_was_loaded=false
+network_local_service_was_loaded=false
 service_state_file_created=false
 installation_complete=false
+
+if service_is_loaded "$calendar_label"; then
+  calendar_local_service_was_loaded=true
+fi
+if service_is_loaded "$network_label"; then
+  network_local_service_was_loaded=true
+fi
 
 restore_service_after_failure() {
   local label="$1"
@@ -385,8 +400,12 @@ restore_service_after_failure() {
   local executable="$3"
   local formula="$4"
   local previous_state="$5"
+  local local_service_was_loaded="$6"
 
-  if [ -f "$plist" ] && [ -x "$executable" ]; then
+  # Remove any partially bootstrapped replacement before restoring prior state.
+  bootout_service "$label"
+
+  if [ "$local_service_was_loaded" = true ] && [ -f "$plist" ] && [ -x "$executable" ]; then
     if bootstrap_service "$label" "$plist" >/dev/null 2>&1; then
       return
     fi
@@ -408,13 +427,15 @@ cleanup() {
       "$calendar_plist" \
       "$calendar_agent_destination/Contents/MacOS/EasyBarCalendarAgent" \
       easybar-calendar-agent \
-      "$brew_calendar_previous_state"
+      "$brew_calendar_previous_state" \
+      "$calendar_local_service_was_loaded"
     restore_service_after_failure \
       "$network_label" \
       "$network_plist" \
       "$network_agent_destination/Contents/MacOS/EasyBarNetworkAgent" \
       easybar-network-agent \
-      "$brew_network_previous_state"
+      "$brew_network_previous_state" \
+      "$network_local_service_was_loaded"
 
     if [ "$service_state_file_created" = true ]; then
       rm -f "$service_state_file"
@@ -455,7 +476,7 @@ stop_homebrew_service_if_started easybar-network-agent
 
 bootout_service "$calendar_label"
 bootout_service "$network_label"
-bash "$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
+"$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
 
 echo "Installing EasyBar.app into $app_destination"
 replace_bundle "$app_source" "$app_destination"

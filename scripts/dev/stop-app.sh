@@ -25,7 +25,12 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-app_executable="${app_dir%/}/EasyBar.app/Contents/MacOS/EasyBar"
+escape_extended_regex() {
+  sed 's/[][\\.^$*+?(){}|]/\\&/g'
+}
 
-# Match the installed executable path instead of every process named EasyBar.
-pkill -f "$app_executable" >/dev/null 2>&1 || true
+app_executable="${app_dir%/}/EasyBar.app/Contents/MacOS/EasyBar"
+app_pattern="^$(printf '%s' "$app_executable" | escape_extended_regex)([[:space:]]|$)"
+
+# Match the complete installed executable path, including paths with regex metacharacters.
+pkill -f "$app_pattern" >/dev/null 2>&1 || true
