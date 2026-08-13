@@ -10,16 +10,16 @@ struct BarContentView: View {
   var body: some View {
     let style = presentationModel.barStyle
 
-    HStack(spacing: 8) {
-      WidgetBarView(presentationModel: presentationModel, position: .left)
+    ZStack {
+      HStack(spacing: 8) {
+        WidgetBarView(presentationModel: presentationModel, position: .left)
 
-      Spacer(minLength: 0)
+        Spacer(minLength: 0)
+
+        WidgetBarView(presentationModel: presentationModel, position: .right)
+      }
 
       WidgetBarView(presentationModel: presentationModel, position: .center)
-
-      Spacer(minLength: 0)
-
-      WidgetBarView(presentationModel: presentationModel, position: .right)
     }
     .font(globalBarFont)
     .padding(.horizontal, style.paddingX)
