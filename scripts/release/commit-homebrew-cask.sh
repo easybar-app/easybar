@@ -52,9 +52,6 @@ if ! is_valid_release_version "$version"; then
 fi
 
 cd "$tap_dir"
-git config user.name "github-actions[bot]"
-git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
 git add -A -- \
   Casks/easybar.rb \
   Formula/easybar-calendar-agent.rb \
@@ -71,5 +68,8 @@ if [ "$dry_run" = true ]; then
   exit 0
 fi
 
-git commit -m "chore(homebrew): update EasyBar to ${version}"
+git \
+  -c user.name="github-actions[bot]" \
+  -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+  commit -m "chore(homebrew): update EasyBar to ${version}"
 git push

@@ -94,6 +94,10 @@ if git -C "${tap_dir}" diff --cached --quiet; then
   echo "Expected dry-run commit script to stage cask changes." >&2
   exit 1
 fi
+if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
+  echo "Dry-run unexpectedly changed the tap's Git identity." >&2
+  exit 1
+fi
 
 # The commit helper must also work on subsequent releases.
 git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
