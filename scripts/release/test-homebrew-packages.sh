@@ -78,12 +78,14 @@ assert_contains "${calendar_formula}" "sha256 \"${calendar_agent_sha}\""
 assert_contains "${calendar_formula}" 'libexec.install "EasyBarCalendarAgent.app"'
 assert_contains "${calendar_formula}" 'keep_alive successful_exit: false'
 assert_contains "${calendar_formula}" 'process_type :interactive'
+assert_contains "${calendar_formula}" 'assert_predicate libexec/"EasyBarCalendarAgent.app/Contents/MacOS/EasyBarCalendarAgent", :executable?'
 assert_contains "${network_formula}" 'class EasybarNetworkAgent < Formula'
 assert_contains "${network_formula}" "url \"https://github.com/easybar-app/easybar/releases/download/${tag}/EasyBarNetworkAgent-${version}.zip\""
 assert_contains "${network_formula}" "sha256 \"${network_agent_sha}\""
 assert_contains "${network_formula}" 'libexec.install "EasyBarNetworkAgent.app"'
 assert_contains "${network_formula}" 'keep_alive successful_exit: false'
 assert_contains "${network_formula}" 'process_type :interactive'
+assert_contains "${network_formula}" 'assert_predicate libexec/"EasyBarNetworkAgent.app/Contents/MacOS/EasyBarNetworkAgent", :executable?'
 
 if grep -Fq 'system "xattr"' "${calendar_formula}" "${network_formula}"; then
   echo "Agent formulas must not fail installation when no quarantine attribute exists." >&2

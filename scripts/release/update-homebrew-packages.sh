@@ -187,7 +187,7 @@ class ${class_name} < Formula
   end
 
   test do
-    assert_predicate libexec/"${app_name}.app", :exist?
+    assert_predicate libexec/"${app_name}.app/Contents/MacOS/${app_name}", :executable?
   end
 end
 EOF_FORMULA
