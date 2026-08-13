@@ -19,10 +19,7 @@ local function apply_event(event)
 		return
 	end
 
-	local value = event.network.primary_interface_is_tunnel
-	if type(value) == "boolean" then
-		state.vpn_connected = value
-	end
+	state.vpn_connected = event.network.primary_interface_is_tunnel == true
 end
 
 --- Returns display content for the current VPN connection state.
