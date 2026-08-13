@@ -239,6 +239,7 @@ write_launch_agent() {
 </plist>
 EOF_PLIST
 
+  plutil -lint "$stage" >/dev/null
   chmod 0644 "$stage"
   mv -f "$stage" "$plist"
 }
@@ -351,6 +352,7 @@ require_command xattr
 if [ "$launch_app" = true ]; then
   require_command open
 fi
+require_command plutil
 
 app_source="$dist_dir/EasyBar.app"
 calendar_agent_source="$dist_dir/EasyBarCalendarAgent.app"
