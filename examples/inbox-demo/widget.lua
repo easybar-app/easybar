@@ -1,7 +1,6 @@
 -- Publishes representative test data for the native inbox.
 
 local SOURCE = "Inbox demo"
-local NOW = os.time()
 local DEMO_DELAY_SECONDS = 1.25
 local DEMO_ORDER = 10000
 
@@ -27,116 +26,121 @@ local HOMEBREW = {
 	order = DEMO_ORDER,
 }
 
----@type EasyBarInboxItem[]
-local DEMO_ITEMS = {
-	{
-		id = "github-review",
-		title = "Review requested on pull request #482",
-		body = "The macOS checks passed and the change is ready for review.",
-		timestamp = NOW,
-		category = "Pull requests",
-		severity = "success",
-		unread = true,
-		source = GITHUB,
-	},
-	{
-		id = "github-security",
-		title = "Dependabot found a critical vulnerability",
-		body = "`swift-nio` should be upgraded before the next release.",
-		format = "markdown",
-		timestamp = NOW - 90,
-		category = "Security",
-		severity = "error",
-		unread = true,
-		source = GITHUB,
-	},
-	{
-		id = "github-mention",
-		title = "You were mentioned in issue #917",
-		body = "A question is waiting for your input.",
-		timestamp = NOW - 180,
-		category = "Issues",
-		severity = "info",
-		unread = false,
-		source = GITHUB,
-	},
-	{
-		id = "gitlab-pipeline",
-		title = "Pipeline requires attention",
-		body = "The deploy job is waiting for manual approval.",
-		timestamp = NOW - 270,
-		category = "Pipelines",
-		severity = "warning",
-		unread = true,
-		source = GITLAB,
-	},
-	{
-		id = "gitlab-merge-request",
-		title = "Merge request !128 is ready",
-		body = "All discussions are resolved and the pipeline passed.",
-		timestamp = NOW - 360,
-		category = "Merge requests",
-		severity = "success",
-		unread = true,
-		source = GITLAB,
-	},
-	{
-		id = "gitlab-issue",
-		title = "Issue #73 was assigned to you",
-		body = "Investigate the intermittent authentication timeout.",
-		timestamp = NOW - 450,
-		category = "Issues",
-		severity = "info",
-		unread = false,
-		source = GITLAB,
-	},
-	{
-		id = "brew-outdated",
-		title = "Three packages can be upgraded",
-		body = "formulae: lua, swiftformat · casks: visual-studio-code",
-		timestamp = NOW - 540,
-		category = "Packages",
-		severity = "info",
-		unread = false,
-		source = HOMEBREW,
-	},
-	{
-		id = "brew-manual-cask",
-		title = "docker-desktop",
-		body = "4.50.0 → 4.51.0 · manual update required · Update through Docker Desktop.",
-		timestamp = NOW - 630,
-		category = "Casks",
-		severity = "warning",
-		unread = true,
-		source = HOMEBREW,
-	},
-	{
-		id = "brew-pinned",
-		title = "Pinned formula was not upgraded",
-		body = "postgresql@16 remains on 16.3.",
-		timestamp = NOW - 720,
-		category = "Formulae",
-		severity = "warning",
-		unread = true,
-		source = HOMEBREW,
-	},
-	{
-		id = "brew-error",
-		title = "Could not refresh package metadata",
-		body = "Homebrew could not reach the package registry.",
-		timestamp = NOW - 810,
-		category = "Updates",
-		severity = "error",
-		unread = true,
-		source = HOMEBREW,
-	},
-}
+--- Builds fresh demo items with timestamps relative to the current refresh.
+---@return EasyBarInboxItem[] items
+local function make_demo_items()
+	local now = os.time()
+
+	return {
+		{
+			id = "github-review",
+			title = "Review requested on pull request #482",
+			body = "The macOS checks passed and the change is ready for review.",
+			timestamp = now,
+			category = "Pull requests",
+			severity = "success",
+			unread = true,
+			source = GITHUB,
+		},
+		{
+			id = "github-security",
+			title = "Dependabot found a critical vulnerability",
+			body = "`swift-nio` should be upgraded before the next release.",
+			format = "markdown",
+			timestamp = now - 90,
+			category = "Security",
+			severity = "error",
+			unread = true,
+			source = GITHUB,
+		},
+		{
+			id = "github-mention",
+			title = "You were mentioned in issue #917",
+			body = "A question is waiting for your input.",
+			timestamp = now - 180,
+			category = "Issues",
+			severity = "info",
+			unread = false,
+			source = GITHUB,
+		},
+		{
+			id = "gitlab-pipeline",
+			title = "Pipeline requires attention",
+			body = "The deploy job is waiting for manual approval.",
+			timestamp = now - 270,
+			category = "Pipelines",
+			severity = "warning",
+			unread = true,
+			source = GITLAB,
+		},
+		{
+			id = "gitlab-merge-request",
+			title = "Merge request !128 is ready",
+			body = "All discussions are resolved and the pipeline passed.",
+			timestamp = now - 360,
+			category = "Merge requests",
+			severity = "success",
+			unread = true,
+			source = GITLAB,
+		},
+		{
+			id = "gitlab-issue",
+			title = "Issue #73 was assigned to you",
+			body = "Investigate the intermittent authentication timeout.",
+			timestamp = now - 450,
+			category = "Issues",
+			severity = "info",
+			unread = false,
+			source = GITLAB,
+		},
+		{
+			id = "brew-outdated",
+			title = "Three packages can be upgraded",
+			body = "formulae: lua, swiftformat · casks: visual-studio-code",
+			timestamp = now - 540,
+			category = "Packages",
+			severity = "info",
+			unread = false,
+			source = HOMEBREW,
+		},
+		{
+			id = "brew-manual-cask",
+			title = "docker-desktop",
+			body = "4.50.0 → 4.51.0 · manual update required · Update through Docker Desktop.",
+			timestamp = now - 630,
+			category = "Casks",
+			severity = "warning",
+			unread = true,
+			source = HOMEBREW,
+		},
+		{
+			id = "brew-pinned",
+			title = "Pinned formula was not upgraded",
+			body = "postgresql@16 remains on 16.3.",
+			timestamp = now - 720,
+			category = "Formulae",
+			severity = "warning",
+			unread = true,
+			source = HOMEBREW,
+		},
+		{
+			id = "brew-error",
+			title = "Could not refresh package metadata",
+			body = "Homebrew could not reach the package registry.",
+			timestamp = now - 810,
+			category = "Updates",
+			severity = "error",
+			unread = true,
+			source = HOMEBREW,
+		},
+	}
+end
 
 ---@type EasyBarInboxItem[]
 local items = {}
 local source_busy = false
 
---- Copies one demo item so local mutations never alter the templates.
+--- Copies one item so publishing cannot mutate the local demo state.
 ---@param item EasyBarInboxItem
 ---@return EasyBarInboxItem copy
 local function copy_item(item)
@@ -171,15 +175,12 @@ local function configure_source_actions()
 	easybar.inbox.configure(SOURCE, { order = DEMO_ORDER, actions = actions })
 end
 
----Restores a fresh mutable snapshot from the immutable demo templates.
+--- Restores a fresh mutable snapshot with current relative timestamps.
 local function reset_items()
-	items = {}
-	for _, item in ipairs(DEMO_ITEMS) do
-		items[#items + 1] = copy_item(item)
-	end
+	items = make_demo_items()
 end
 
----Publishes the current demo snapshot without affecting real inbox sources.
+--- Publishes the current demo snapshot without affecting real inbox sources.
 local function publish()
 	local snapshot = {}
 	for _, item in ipairs(items) do
@@ -187,6 +188,7 @@ local function publish()
 	end
 	easybar.inbox.replace(SOURCE, snapshot)
 end
+
 configure_source_actions()
 
 easybar.inbox.on_context_action(SOURCE, function(event)

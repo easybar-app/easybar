@@ -35,9 +35,7 @@ local function apply_event(event)
 		return
 	end
 
-	if event.network.interface_name ~= nil then
-		state.interface_name = normalize_interface_name(event.network.interface_name)
-	end
+	state.interface_name = normalize_interface_name(event.network.interface_name)
 end
 
 --- Returns the current interface label or the offline fallback.
@@ -70,14 +68,6 @@ end
 network = easybar.add(easybar.kind.item, "network", {
 	position = "right",
 	order = 35,
-	icon = {
-		string = "📶",
-		color = COLORS.muted,
-	},
-	label = {
-		string = "",
-		color = COLORS.muted,
-	},
 })
 
 network:subscribe({
