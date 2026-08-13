@@ -14,7 +14,9 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     self.context = context
     self.presentationModel = context.presentationModel
 
-    let screen = NSScreen.main ?? NSScreen.screens[0]
+    guard let screen = Self.preferredScreen() else {
+      preconditionFailure("EasyBar requires an available display")
+    }
     let frame = Self.makeFrame(for: screen, style: context.presentationModel.barStyle)
 
     context.logger.debug(
@@ -74,7 +76,10 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
       return
     }
 
-    let screen = window.screen ?? NSScreen.main ?? NSScreen.screens[0]
+    guard let screen = Self.preferredScreen(for: window) else {
+      context.logger.warn("bar window reloadLayout skipped because no display is available")
+      return
+    }
     let frame = Self.makeFrame(for: screen, style: presentationModel.barStyle)
 
     Self.apply(frame: frame, to: window, display: true)
@@ -100,6 +105,11 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     (window as? BarPanel)?.contextMenuProvider = nil
     window?.orderOut(nil)
     close()
+  }
+
+  /// Returns the window's display or the current system fallback display.
+  private static func preferredScreen(for window: NSWindow? = nil) -> NSScreen? {
+    window?.screen ?? NSScreen.main ?? NSScreen.screens.first
   }
 
   /// Applies a fixed panel frame without retaining constraints from the previous bar height.
