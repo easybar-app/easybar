@@ -39,6 +39,34 @@ image_convert=$2
 dist_dir=$3
 shift 3
 
+for spec in "$@"; do
+  case "$spec" in
+    *:*) ;;
+    *)
+      echo "Invalid icon specification (expected SVG:ICNS): $spec" >&2
+      exit 2
+      ;;
+  esac
+
+  svg=${spec%%:*}
+  icns=${spec#*:}
+  if [ -z "$svg" ] || [ -z "$icns" ]; then
+    echo "Icon specification paths must not be empty: $spec" >&2
+    exit 2
+  fi
+  case "$icns" in
+    *.icns) ;;
+    *)
+      echo "Icon output must use the .icns extension: $icns" >&2
+      exit 2
+      ;;
+  esac
+  if [ "$svg" = "$icns" ]; then
+    echo "Icon input and output must be different paths: $svg" >&2
+    exit 2
+  fi
+done
+
 require_command "$svg_convert" "Install librsvg or set SVG_CONVERT=/path/to/rsvg-convert."
 require_command "$image_convert" "Install ImageMagick or set IMAGE_CONVERT=/path/to/convert."
 require_command sips "This target must run on macOS."

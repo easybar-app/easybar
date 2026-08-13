@@ -50,6 +50,7 @@ test: ## Run EasyBar frontend unit tests.
 	@$(SWIFT) test
 
 check-scripts: ## Test build, release archive, and Homebrew package helpers.
+	@scripts/assets/test-app-icons.sh
 	@scripts/build/test-clean.sh
 	@scripts/build/test-stamp.py
 	@scripts/dev/test-local-version.sh
