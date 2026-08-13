@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Returns success for release versions accepted by EasyBar tags and package publishing.
+is_valid_release_version() {
+  local version="$1"
+  local prerelease
+  local identifier
+  local identifiers=()
+
+  if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+    return 1
+  fi
+
+  if [[ "$version" != *-* ]]; then
+    return 0
+  fi
+
+  prerelease="${version#*-}"
+  IFS=. read -r -a identifiers <<<"$prerelease"
+  for identifier in "${identifiers[@]}"; do
+    if [[ "$identifier" =~ ^[0-9]+$ ]] && [ "$identifier" != 0 ] && [[ "$identifier" == 0* ]]; then
+      return 1
+    fi
+  done
+}
+
+# Returns success for canonical v-prefixed EasyBar release tags.
+is_valid_release_tag() {
+  local tag="$1"
+
+  [[ "$tag" == v* ]] && is_valid_release_version "${tag#v}"
+}
+
+# Returns success for safe GitHub owner/repository identifiers.
+is_valid_github_repository() {
+  [[ "$1" =~ ^[0-9A-Za-z][0-9A-Za-z._-]*/[0-9A-Za-z][0-9A-Za-z._-]*$ ]]
+}
+
+# Returns success for lowercase SHA-256 digests emitted by the release workflow.
+is_valid_sha256() {
+  [[ "$1" =~ ^[0-9a-f]{64}$ ]]
+}

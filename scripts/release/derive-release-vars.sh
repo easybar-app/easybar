@@ -16,30 +16,8 @@ write_output() {
   fi
 }
 
-is_valid_release_tag() {
-  local candidate="$1"
-  local version
-  local prerelease
-  local identifier
-  local identifiers=()
-
-  if [[ ! "$candidate" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
-    return 1
-  fi
-
-  version="${candidate#v}"
-  if [[ "$version" != *-* ]]; then
-    return 0
-  fi
-
-  prerelease="${version#*-}"
-  IFS=. read -r -a identifiers <<<"$prerelease"
-  for identifier in "${identifiers[@]}"; do
-    if [[ "$identifier" =~ ^[0-9]+$ ]] && [ "$identifier" != 0 ] && [[ "$identifier" == 0* ]]; then
-      return 1
-    fi
-  done
-}
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+source "$script_dir/metadata.sh"
 
 tag=""
 repository="${GITHUB_REPOSITORY:-}"

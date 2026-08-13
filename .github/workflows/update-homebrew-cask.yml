@@ -66,7 +66,6 @@ jobs:
           scripts/release/update-homebrew-cask.sh \
             --tap-dir homebrew-tap \
             --repository "${GITHUB_REPOSITORY}" \
-            --tag "${{ steps.vars.outputs.tag }}" \
             --version "${{ steps.vars.outputs.version }}" \
             --sha "${{ steps.sha.outputs.sha }}" \
             --calendar-agent-sha "${{ steps.sha.outputs.calendar_agent_sha }}" \

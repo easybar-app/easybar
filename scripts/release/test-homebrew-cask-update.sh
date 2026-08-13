@@ -23,7 +23,6 @@ git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \
-  --tag "${tag}" \
   --version "${version}" \
   --sha "${sha}" \
   --calendar-agent-sha "${calendar_agent_sha}" \
@@ -48,12 +47,17 @@ assert_contains "${easybar_cask}" "version \"${version}\""
 assert_contains "${easybar_cask}" '"easybar-calendar-agent",'
 assert_contains "${easybar_cask}" '"easybar-network-agent",'
 assert_contains "${easybar_cask}" 'depends_on macos: :sonoma'
-assert_contains "${easybar_cask}" 'system "xattr", "-d", "com.apple.quarantine", "#{staged_path}/easybar"'
-assert_contains "${easybar_cask}" 'system "xattr", "-dr", "com.apple.quarantine", "#{appdir}/EasyBar.app"'
+assert_contains "${easybar_cask}" 'postflight_steps do'
+assert_contains "${easybar_cask}" 'run "/usr/bin/xattr",'
+assert_contains "${easybar_cask}" 'args: ["-d", "com.apple.quarantine", "{{staged_path}}/easybar"]'
+assert_contains "${easybar_cask}" 'args: ["-dr", "com.apple.quarantine", "{{appdir}}/EasyBar.app"]'
+assert_contains "${easybar_cask}" 'must_succeed: false'
+assert_contains "${easybar_cask}" 'run "{{HOMEBREW_BREW_FILE}}",'
 assert_contains "${easybar_cask}" '"services", "restart", "easybar-calendar-agent"'
 assert_contains "${easybar_cask}" '"services", "restart", "easybar-network-agent"'
 assert_contains "${easybar_cask}" '"services", "stop", "easybar-calendar-agent"'
 assert_contains "${easybar_cask}" '"services", "stop", "easybar-network-agent"'
+assert_contains "${easybar_cask}" 'uninstall_preflight_steps do'
 assert_contains "${easybar_cask}" 'app "EasyBar.app"'
 assert_contains "${easybar_cask}" 'binary "easybar"'
 
@@ -97,7 +101,6 @@ git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \
-  --tag "v9.8.8" \
   --version "9.8.8" \
   --sha "${sha}" \
   --calendar-agent-sha "${calendar_agent_sha}" \
@@ -106,3 +109,19 @@ git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
   --tap-dir "${tap_dir}" \
   --version "9.8.8" \
   --dry-run >/dev/null
+
+if grep -Fq 'postflight do' "${easybar_cask}"; then
+  echo "Legacy Homebrew flight block was generated." >&2
+  exit 1
+fi
+
+if "${repo_root}/scripts/release/update-homebrew-cask.sh" \
+  --tap-dir "${tap_dir}" \
+  --repository 'invalid repository' \
+  --version "9.8.8" \
+  --sha "${sha}" \
+  --calendar-agent-sha "${calendar_agent_sha}" \
+  --network-agent-sha "${network_agent_sha}" >/dev/null 2>&1; then
+  echo "Expected invalid repository metadata to fail." >&2
+  exit 1
+fi
