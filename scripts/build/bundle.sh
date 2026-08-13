@@ -196,6 +196,8 @@ raise SystemExit("easybar-kit dependency not found")'
 }
 
 final_dist_dir="$dist_dir"
+root_package_path="$project_root"
+local_package_path="${LOCAL_PACKAGE_DIR:-$project_root/.build/local-package}"
 dist_stage=""
 dist_backup=""
 build_version_file=""
@@ -285,6 +287,11 @@ if [ -n "$kit_root" ]; then
   fi
   kit_root="$(cd -- "$kit_root" && pwd -P)"
   export EASYBAR_KIT_ROOT="$kit_root"
+  root_package_path="$local_package_path"
+  "$project_root/scripts/build/prepare-local-package.sh" \
+    --project-root "$project_root" \
+    --output "$root_package_path"
+  root_package_path="$(cd -- "$root_package_path" && pwd -P)"
   echo "Using local EasyBarKit checkout: $kit_root"
 else
   unset EASYBAR_KIT_ROOT
@@ -356,11 +363,18 @@ root_product_path() {
   local product="$2"
   local bin_dir
 
-  (
-    cd "$project_root"
-    swift build -c release --arch "$build_arch" --product "$product" >&2
-  )
-  bin_dir="$(cd "$project_root" && swift build -c release --arch "$build_arch" --show-bin-path)"
+  swift build \
+    --package-path "$root_package_path" \
+    -c release \
+    --arch "$build_arch" \
+    --product "$product" >&2
+  bin_dir="$(
+    swift build \
+      --package-path "$root_package_path" \
+      -c release \
+      --arch "$build_arch" \
+      --show-bin-path
+  )"
   printf '%s/%s\n' "$bin_dir" "$product"
 }
 

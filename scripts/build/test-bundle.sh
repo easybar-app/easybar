@@ -210,6 +210,7 @@ fail_marker="$tmp_dir/codesign-failed"
 if output="$({
   PATH="$fake_bin:$PATH" \
     FAKE_BUILD_ROOT="$build_root" \
+    LOCAL_PACKAGE_DIR="$tmp_dir/local-package" \
     FAKE_KIT_ROOT="$kit_root" \
     FAKE_CODESIGN_FAIL_MARKER="$fail_marker" \
     "$bundle_script" "${bundle_args[@]}"
@@ -235,6 +236,7 @@ fi
 output="$({
   PATH="$fake_bin:$PATH" \
     FAKE_BUILD_ROOT="$build_root" \
+    LOCAL_PACKAGE_DIR="$tmp_dir/local-package" \
     FAKE_KIT_ROOT="$kit_root" \
     FAKE_CODESIGN_FAIL_MARKER="$fail_marker" \
     "$bundle_script" "${bundle_args[@]}"

@@ -14,6 +14,7 @@ LOCAL_AGENT_DIR ?= $(HOME)/Library/Application Support/EasyBar/Agents
 LOCAL_LAUNCH_AGENT_DIR ?= $(HOME)/Library/LaunchAgents
 LOCAL_LOG_DIR ?= $(HOME)/Library/Logs/EasyBar
 LOCAL_STATE_DIR ?= $(HOME)/Library/Application Support/EasyBar/LocalInstall
+LOCAL_PACKAGE_DIR ?= .build/local-package
 
 PACKAGE_ZIP := $(DIST_DIR)/EasyBar-$(VERSION).zip
 CALENDAR_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarCalendarAgent-$(VERSION).zip
@@ -29,7 +30,7 @@ NEXT_MAJOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split("."
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test check check-scripts run support \
+.PHONY: help build test check check-scripts run support prepare-local-package \
         bundle package release verify verify-release print-package-sha256 \
         bundle-local update install-local uninstall-local stop restart-app print-local-version \
         fmt fmt-swift fmt-prettier lint lint-swift lint-prettier \
@@ -51,6 +52,7 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/assets/test-app-icons.sh
 	@scripts/build/test-bundle.sh
 	@scripts/build/test-clean.sh
+	@scripts/build/test-local-package.sh
 	@scripts/build/test-stamp.py
 	@scripts/dev/test-install-local.sh
 	@scripts/dev/test-local-version.sh
@@ -100,18 +102,25 @@ print-package-sha256: package ## Print SHA-256 hashes for all release ZIPs.
 update: ## Update Swift package dependencies.
 	@$(SWIFT) package update
 
-support: ## Build and expose EasyBarKit's Lua runtime helper for direct source-tree runs.
+prepare-local-package:
+	@scripts/build/prepare-local-package.sh \
+		--project-root . \
+		--output "$(LOCAL_PACKAGE_DIR)"
+
+support: prepare-local-package ## Build and expose EasyBarKit's Lua runtime helper for direct source-tree runs.
 	@test -f "$(EASYBAR_KIT_ROOT)/Package.swift" || { echo "EasyBarKit checkout not found: $(EASYBAR_KIT_ROOT)" >&2; exit 1; }
 	@kit_root="$$(cd -- "$(EASYBAR_KIT_ROOT)" && pwd -P)"; \
+		local_package="$$(cd -- "$(LOCAL_PACKAGE_DIR)" && pwd -P)"; \
 		$(SWIFT) build --package-path "$$kit_root" --product EasyBarLuaRuntime; \
 		kit_bin="$$($(SWIFT) build --package-path "$$kit_root" --show-bin-path)"; \
-		app_bin="$$(EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) build --show-bin-path)"; \
+		app_bin="$$(EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) build --package-path "$$local_package" --show-bin-path)"; \
 		mkdir -p "$$app_bin"; \
 		ln -sf "$$kit_bin/EasyBarLuaRuntime" "$$app_bin/EasyBarLuaRuntime"
 
 run: support ## Run EasyBar directly from the source checkout.
 	@kit_root="$$(cd -- "$(EASYBAR_KIT_ROOT)" && pwd -P)"; \
-		EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) run EasyBar
+		local_package="$$(cd -- "$(LOCAL_PACKAGE_DIR)" && pwd -P)"; \
+		EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) run --package-path "$$local_package" EasyBar
 
 bundle-local: ## Build a complete local EasyBar.app using the sibling EasyBarKit checkout.
 	@local_version="$$(scripts/dev/local-version.sh --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
