@@ -134,6 +134,9 @@ require_command sips
 require_command iconutil
 require_command python3
 
+# Reject malformed versions before resolving dependencies or changing distribution output.
+python3 "$project_root/scripts/build/stamp.py" bundle-version --version "$version" >/dev/null
+
 case "$dist_dir" in
 /*) ;;
 *) dist_dir="$project_root/$dist_dir" ;;

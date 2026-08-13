@@ -45,7 +45,7 @@ archive_contains_exact_entry \
 test "$(archive_top_level_entries "$network_archive")" = "EasyBarNetworkAgent-9.8.7-dev.test"
 
 if "$repo_root/scripts/release/package.sh" \
-  --version '../unsafe' \
+  --version '1.2.3-../../unsafe' \
   --dist-dir "$dist_dir" >/dev/null 2>&1; then
   echo "Expected unsafe package version to fail" >&2
   exit 1

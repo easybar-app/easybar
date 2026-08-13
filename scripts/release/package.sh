@@ -39,8 +39,17 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [[ ! "$version" =~ ^[0-9A-Za-z][0-9A-Za-z.-]*$ ]]; then
-  echo "Version contains characters that are unsafe in package filenames: $version" >&2
+require_command() {
+  local command_name="$1"
+
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Required command not found: $command_name" >&2
+    exit 1
+  fi
+}
+
+require_command python3
+if ! python3 "$project_root/scripts/build/stamp.py" bundle-version --version "$version" >/dev/null; then
   exit 2
 fi
 
@@ -68,15 +77,6 @@ require_path() {
 
   if [ ! -e "$path" ]; then
     echo "Missing ${label}: ${path}" >&2
-    exit 1
-  fi
-}
-
-require_command() {
-  local command_name="$1"
-
-  if ! command -v "$command_name" >/dev/null 2>&1; then
-    echo "Required command not found: $command_name" >&2
     exit 1
   fi
 }

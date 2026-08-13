@@ -53,6 +53,14 @@ arm64 | x86_64 | universal) ;;
   ;;
 esac
 
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Required command not found: python3" >&2
+  exit 1
+fi
+if ! python3 "$project_root/scripts/build/stamp.py" bundle-version --version "$version" >/dev/null; then
+  exit 2
+fi
+
 case "$dist_dir" in
 /*) ;;
 *) dist_dir="$project_root/$dist_dir" ;;

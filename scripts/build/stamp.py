@@ -19,10 +19,12 @@ LUA_API_DOC_PATTERN = re.compile(
 LUA_API_VALUE_PATTERN = re.compile(
     r'^EasyBar\.version = "[^"]*"$', re.MULTILINE
 )
-SEMVER_CORE_PATTERN = re.compile(
+SEMVER_PATTERN = re.compile(
     r"^(0|[1-9][0-9]*)\."
     r"(0|[1-9][0-9]*)\."
-    r"(0|[1-9][0-9]*)(?:$|[-+])"
+    r"(0|[1-9][0-9]*)"
+    r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
+    r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
 )
 
 
@@ -45,22 +47,42 @@ def replace_required(
     return updated, True
 
 
-def normalize_bundle_version(version: str) -> str:
-    """Return the numeric three-component version required by Apple bundles."""
+def semantic_version_core(version: str) -> tuple[str, str, str]:
+    """Validate an artifact version and return its semantic-version core."""
     if version == "dev":
-        return "0.0.0"
+        return ("0", "0", "0")
 
-    match = SEMVER_CORE_PATTERN.match(version)
+    match = SEMVER_PATTERN.fullmatch(version)
     if match is None:
         raise ValueError(
-            "version must be dev or start with MAJOR.MINOR.PATCH: "
-            f"{version}"
+            "version must be dev or a complete semantic version: "
+            f"{version!r}"
         )
 
-    return ".".join(match.groups())
+    prerelease = match.group(4)
+    if prerelease is not None:
+        for identifier in prerelease.split("."):
+            if identifier.isdigit() and len(identifier) > 1 and identifier[0] == "0":
+                raise ValueError(
+                    "numeric prerelease identifiers must not contain leading zeros: "
+                    f"{version!r}"
+                )
+
+    return (match.group(1), match.group(2), match.group(3))
+
+
+def normalize_bundle_version(version: str) -> str:
+    """Return the numeric three-component version required by Apple bundles."""
+    return ".".join(semantic_version_core(version))
 
 
 def stamp_lua_api(path: Path, version: str) -> int:
+    try:
+        semantic_version_core(version)
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+
     if not path.is_file():
         print(f"Missing staged Lua API stub: {path}", file=sys.stderr)
         return 1
