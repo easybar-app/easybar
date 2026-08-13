@@ -29,3 +29,8 @@ test "$(latest_release_tag "$tmp_dir")" = v1.2.4-alpha.10
 
 git -C "$tmp_dir" tag v1.2.4
 test "$(latest_release_tag "$tmp_dir")" = v1.2.4
+
+if latest_release_tag "$tmp_dir" missing-revision >/dev/null 2>&1; then
+  echo "Expected an invalid release-tag lookup revision to fail" >&2
+  exit 1
+fi

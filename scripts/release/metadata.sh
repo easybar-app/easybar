@@ -48,6 +48,11 @@ latest_release_tag() {
   local tag
   local tags=()
 
+  if ! git -C "$repository_root" rev-parse --verify "${revision}^{commit}" >/dev/null 2>&1; then
+    echo "Invalid Git revision for release tag lookup: $revision" >&2
+    return 1
+  fi
+
   while IFS= read -r tag; do
     if is_valid_release_tag "$tag"; then
       tags+=("$tag")
