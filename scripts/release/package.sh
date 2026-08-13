@@ -71,35 +71,55 @@ calendar_agent_bundle="$dist_dir/EasyBarCalendarAgent.app"
 network_agent_bundle="$dist_dir/EasyBarNetworkAgent.app"
 cli_bin="$dist_dir/easybar"
 
-require_path() {
+require_directory() {
   local path="$1"
   local label="$2"
 
-  if [ ! -e "$path" ]; then
-    echo "Missing ${label}: ${path}" >&2
+  if [ ! -d "$path" ]; then
+    echo "Missing ${label} directory: ${path}" >&2
+    exit 1
+  fi
+}
+
+require_executable() {
+  local path="$1"
+  local label="$2"
+
+  if [ ! -f "$path" ] || [ ! -x "$path" ]; then
+    echo "Missing executable ${label}: ${path}" >&2
     exit 1
   fi
 }
 
 require_command cp
 require_command mktemp
+require_command mv
 require_command zip
-require_path "$app_bundle" "app bundle"
-require_path "$calendar_agent_bundle" "calendar agent bundle"
-require_path "$network_agent_bundle" "network agent bundle"
-require_path "$cli_bin" "CLI binary"
+require_directory "$app_bundle" "app bundle"
+require_directory "$calendar_agent_bundle" "calendar agent bundle"
+require_directory "$network_agent_bundle" "network agent bundle"
+require_executable "$app_bundle/Contents/MacOS/EasyBar" "EasyBar app"
+require_executable \
+  "$calendar_agent_bundle/Contents/MacOS/EasyBarCalendarAgent" \
+  "calendar agent"
+require_executable \
+  "$network_agent_bundle/Contents/MacOS/EasyBarNetworkAgent" \
+  "network agent"
+require_executable "$cli_bin" "EasyBar CLI"
 
-stage_root="$(mktemp -d "${TMPDIR:-/tmp}/easybar-package.XXXXXX")"
+stage_root="$(mktemp -d "$dist_dir/.easybar-package.XXXXXX")"
 cleanup() {
   rm -rf "$stage_root"
 }
 trap cleanup EXIT
 
-rm -f "$package_zip" "$calendar_agent_zip" "$network_agent_zip"
+package_zip_stage="$stage_root/$(basename -- "$package_zip")"
+calendar_agent_zip_stage="$stage_root/$(basename -- "$calendar_agent_zip")"
+network_agent_zip_stage="$stage_root/$(basename -- "$network_agent_zip")"
 
 (
   cd "$dist_dir"
-  zip -qry -y "$package_zip" EasyBar.app easybar
+  zip -qry -y "$package_zip_stage" EasyBar.app easybar
 )
 
 package_agent() {
@@ -117,13 +137,23 @@ package_agent() {
   )
 }
 
-package_agent "$calendar_agent_bundle" EasyBarCalendarAgent "$calendar_agent_zip"
-package_agent "$network_agent_bundle" EasyBarNetworkAgent "$network_agent_zip"
+package_agent "$calendar_agent_bundle" EasyBarCalendarAgent "$calendar_agent_zip_stage"
+package_agent "$network_agent_bundle" EasyBarNetworkAgent "$network_agent_zip_stage"
 
-for archive in "$package_zip" "$calendar_agent_zip" "$network_agent_zip"; do
+for archive in \
+  "$package_zip_stage" \
+  "$calendar_agent_zip_stage" \
+  "$network_agent_zip_stage"; do
   if [ ! -s "$archive" ]; then
     echo "Package archive is empty: $archive" >&2
     exit 1
   fi
-  echo "Created $archive"
 done
+
+mv -f "$package_zip_stage" "$package_zip"
+mv -f "$calendar_agent_zip_stage" "$calendar_agent_zip"
+mv -f "$network_agent_zip_stage" "$network_agent_zip"
+
+echo "Created $package_zip"
+echo "Created $calendar_agent_zip"
+echo "Created $network_agent_zip"

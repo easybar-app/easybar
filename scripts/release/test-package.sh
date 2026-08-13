@@ -50,3 +50,52 @@ if "$repo_root/scripts/release/package.sh" \
   echo "Expected unsafe package version to fail" >&2
   exit 1
 fi
+
+printf 'old main archive\n' >"$main_archive"
+printf 'old calendar archive\n' >"$calendar_archive"
+printf 'old network archive\n' >"$network_archive"
+cp "$main_archive" "$tmp_dir/main.expected"
+cp "$calendar_archive" "$tmp_dir/calendar.expected"
+cp "$network_archive" "$tmp_dir/network.expected"
+
+real_zip="$(command -v zip)"
+fake_bin="$tmp_dir/bin"
+zip_count="$tmp_dir/zip-count"
+mkdir "$fake_bin"
+cat >"$fake_bin/zip" <<'EOF_ZIP'
+#!/usr/bin/env bash
+set -euo pipefail
+
+count=0
+if [ -f "$FAKE_ZIP_COUNT_FILE" ]; then
+  count="$(cat "$FAKE_ZIP_COUNT_FILE")"
+fi
+count=$((count + 1))
+printf '%s\n' "$count" >"$FAKE_ZIP_COUNT_FILE"
+if [ "$count" -eq 2 ]; then
+  exit 1
+fi
+exec "$REAL_ZIP" "$@"
+EOF_ZIP
+chmod +x "$fake_bin/zip"
+
+if PATH="$fake_bin:$PATH" \
+  FAKE_ZIP_COUNT_FILE="$zip_count" \
+  REAL_ZIP="$real_zip" \
+  "$repo_root/scripts/release/package.sh" \
+  --version 9.8.7-dev.test \
+  --dist-dir "$dist_dir" >/dev/null 2>&1; then
+  echo "Expected staged package creation to fail" >&2
+  exit 1
+fi
+
+cmp -s "$main_archive" "$tmp_dir/main.expected"
+cmp -s "$calendar_archive" "$tmp_dir/calendar.expected"
+cmp -s "$network_archive" "$tmp_dir/network.expected"
+
+leftovers="$(find "$dist_dir" -maxdepth 1 -name '.easybar-package.*' -print)"
+if [ -n "$leftovers" ]; then
+  echo "Failed package creation left staging directories:" >&2
+  printf '%s\n' "$leftovers" >&2
+  exit 1
+fi
