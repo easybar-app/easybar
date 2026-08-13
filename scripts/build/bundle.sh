@@ -70,11 +70,6 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
-case "$dist_dir" in
-/*) ;;
-*) dist_dir="$project_root/$dist_dir" ;;
-esac
-
 # Exits with an installation hint when a required executable is unavailable.
 require_command() {
   local command_name="$1"
@@ -119,6 +114,16 @@ stage_writable_file() {
   install -m 0644 "$source" "$destination"
 }
 
+# Returns an absolute path with existing symlinks resolved.
+canonical_path() {
+  python3 - "$1" <<'PY_PATH'
+import os
+import sys
+
+print(os.path.realpath(sys.argv[1]))
+PY_PATH
+}
+
 require_command swift
 require_command install
 require_command codesign
@@ -127,6 +132,25 @@ require_command rsvg-convert "Install librsvg with: brew install librsvg"
 require_command magick "Install ImageMagick with: brew install imagemagick"
 require_command sips
 require_command iconutil
+require_command python3
+
+case "$dist_dir" in
+/*) ;;
+*) dist_dir="$project_root/$dist_dir" ;;
+esac
+dist_dir="$(canonical_path "$dist_dir")"
+
+if [ "$dist_dir" = / ]; then
+  echo "Distribution directory must not be the filesystem root" >&2
+  exit 2
+fi
+
+case "$project_root" in
+"$dist_dir" | "$dist_dir"/*)
+  echo "Distribution directory must not be the project root or one of its parents: $dist_dir" >&2
+  exit 2
+  ;;
+esac
 
 # Resolves the EasyBarKit checkout selected by SwiftPM.
 resolve_easybar_kit_dependency_path() {

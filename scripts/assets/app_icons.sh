@@ -19,6 +19,16 @@ require_file() {
   fi
 }
 
+cleanup() {
+  if [ -n "${tmp_dir:-}" ]; then
+    rm -rf "$tmp_dir"
+  fi
+  if [ -n "${render_dir:-}" ]; then
+    rm -rf "$render_dir"
+  fi
+}
+trap cleanup 0
+
 if [ "$#" -lt 4 ]; then
   usage
   exit 2
@@ -40,6 +50,9 @@ create_icon_variant() {
   sips -z "$size" "$size" "$rendered_png" --out "$tmp_dir/$output" >/dev/null
 }
 
+tmp_dir=""
+render_dir=""
+
 for spec in "$@"; do
   svg=${spec%%:*}
   icns=${spec#*:}
@@ -47,10 +60,11 @@ for spec in "$@"; do
   tmp_dir="$dist_dir/.$base.iconset"
   render_dir="$dist_dir/.$base.render"
   rendered_png="$render_dir/icon_1024x1024.png"
+  rendered_icns="$render_dir/$base.icns"
 
   require_file "$svg" "icon SVG"
 
-  rm -rf "$tmp_dir" "$render_dir" "$icns"
+  rm -rf "$tmp_dir" "$render_dir"
   mkdir -p "$(dirname "$icns")" "$tmp_dir" "$render_dir"
 
   "$svg_convert" \
@@ -87,12 +101,14 @@ for spec in "$@"; do
   create_icon_variant 512 icon_256x256@2x.png
   create_icon_variant 512 icon_512x512.png
 
-  iconutil -c icns "$tmp_dir" -o "$icns"
-
-  if [ ! -s "$icns" ]; then
+  iconutil -c icns "$tmp_dir" -o "$rendered_icns"
+  if [ ! -s "$rendered_icns" ]; then
     echo "Could not create icon: $icns" >&2
     exit 1
   fi
+  mv -f "$rendered_icns" "$icns"
 
   rm -rf "$tmp_dir" "$render_dir"
+  tmp_dir=""
+  render_dir=""
 done
