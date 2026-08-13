@@ -50,6 +50,7 @@ test: ## Run EasyBar frontend unit tests.
 	@$(SWIFT) test
 
 check-scripts: ## Test build, release archive, and Homebrew package helpers.
+	@scripts/build/test-clean.sh
 	@scripts/build/test-stamp.py
 	@scripts/dev/test-local-version.sh
 	@scripts/release/test-archive-utils.sh
@@ -170,7 +171,22 @@ lint-swift: ## Check Swift formatting.
 ##@ Cleanup
 
 clean-dist: ## Remove distribution output.
-	@rm -rf "$(DIST_DIR)"
+	@project_root="$$(pwd -P)"; \
+		case "$(DIST_DIR)" in \
+			/*) dist="$(DIST_DIR)" ;; \
+			*) dist="$$project_root/$(DIST_DIR)" ;; \
+		esac; \
+		dist="$$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$$dist")"; \
+		if [ "$$dist" = / ]; then \
+			echo "Distribution directory must not be the filesystem root" >&2; \
+			exit 2; \
+		fi; \
+		case "$$project_root" in \
+			"$$dist" | "$$dist"/*) \
+				echo "Distribution directory must not be the project root or one of its parents: $$dist" >&2; \
+				exit 2 ;; \
+		esac; \
+		rm -rf "$$dist"
 
 clean: clean-dist ## Remove SwiftPM and distribution output.
 	@rm -rf .build
