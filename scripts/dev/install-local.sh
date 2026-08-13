@@ -158,6 +158,81 @@ ensure_directory() {
   sudo mkdir -p "$directory"
 }
 
+path_exists() {
+  [ -e "$1" ] || [ -L "$1" ]
+}
+
+remove_installation_path() {
+  local path="$1"
+  local parent
+
+  if ! path_exists "$path"; then
+    return
+  fi
+
+  parent="$(dirname -- "$path")"
+  if [ -w "$parent" ]; then
+    rm -rf "$path"
+    return
+  fi
+
+  require_command sudo
+  sudo rm -rf "$path"
+}
+
+move_installation_path() {
+  local source="$1"
+  local destination="$2"
+  local parent
+
+  parent="$(dirname -- "$destination")"
+  if [ -w "$parent" ]; then
+    mv "$source" "$destination"
+    return
+  fi
+
+  require_command sudo
+  sudo mv "$source" "$destination"
+}
+
+backup_installation_path() {
+  local source="$1"
+  local backup="$2"
+  local parent
+
+  remove_installation_path "$backup"
+  if ! path_exists "$source"; then
+    return
+  fi
+
+  parent="$(dirname -- "$source")"
+  if [ -w "$parent" ]; then
+    if [ -d "$source" ] && [ ! -L "$source" ]; then
+      ditto "$source" "$backup"
+    else
+      cp -pP "$source" "$backup"
+    fi
+    return
+  fi
+
+  require_command sudo
+  if [ -d "$source" ] && [ ! -L "$source" ]; then
+    sudo ditto "$source" "$backup"
+  else
+    sudo cp -pP "$source" "$backup"
+  fi
+}
+
+restore_installation_path() {
+  local destination="$1"
+  local backup="$2"
+
+  remove_installation_path "$destination"
+  if path_exists "$backup"; then
+    move_installation_path "$backup" "$destination"
+  fi
+}
+
 replace_bundle() {
   local source="$1"
   local destination="$2"
@@ -275,9 +350,14 @@ write_launch_agent() {
 </plist>
 EOF_PLIST
 
-  plutil -lint "$stage" >/dev/null
-  chmod 0644 "$stage"
-  mv -f "$stage" "$plist"
+  if ! plutil -lint "$stage" >/dev/null; then
+    rm -f "$stage"
+    return 1
+  fi
+  if ! chmod 0644 "$stage" || ! mv -f "$stage" "$plist"; then
+    rm -f "$stage"
+    return 1
+  fi
 }
 
 service_target() {
@@ -427,6 +507,48 @@ calendar_stderr="${log_dir%/}/calendar-agent.err.log"
 network_stdout="${log_dir%/}/network-agent.out.log"
 network_stderr="${log_dir%/}/network-agent.err.log"
 service_state_file="${state_dir%/}/homebrew-services.state"
+backup_suffix=".local-backup.$$"
+app_backup="${app_destination}${backup_suffix}"
+calendar_agent_backup="${calendar_agent_destination}${backup_suffix}"
+network_agent_backup="${network_agent_destination}${backup_suffix}"
+cli_backup="${cli_destination}${backup_suffix}"
+calendar_plist_backup="${calendar_plist}${backup_suffix}"
+network_plist_backup="${network_plist}${backup_suffix}"
+
+backup_installation_paths() {
+  backup_installation_path "$app_destination" "$app_backup"
+  backup_installation_path "$calendar_agent_destination" "$calendar_agent_backup"
+  backup_installation_path "$network_agent_destination" "$network_agent_backup"
+  backup_installation_path "$cli_destination" "$cli_backup"
+  backup_installation_path "$calendar_plist" "$calendar_plist_backup"
+  backup_installation_path "$network_plist" "$network_plist_backup"
+}
+
+restore_installation_paths() {
+  local failed=false
+
+  restore_installation_path "$calendar_plist" "$calendar_plist_backup" || failed=true
+  restore_installation_path "$network_plist" "$network_plist_backup" || failed=true
+  restore_installation_path "$app_destination" "$app_backup" || failed=true
+  restore_installation_path "$calendar_agent_destination" "$calendar_agent_backup" || failed=true
+  restore_installation_path "$network_agent_destination" "$network_agent_backup" || failed=true
+  restore_installation_path "$cli_destination" "$cli_backup" || failed=true
+
+  [ "$failed" = false ]
+}
+
+discard_installation_backups() {
+  local failed=false
+
+  remove_installation_path "$app_backup" || failed=true
+  remove_installation_path "$calendar_agent_backup" || failed=true
+  remove_installation_path "$network_agent_backup" || failed=true
+  remove_installation_path "$cli_backup" || failed=true
+  remove_installation_path "$calendar_plist_backup" || failed=true
+  remove_installation_path "$network_plist_backup" || failed=true
+
+  [ "$failed" = false ]
+}
 
 user_id="$(id -u)"
 user_domain="gui/$user_id"
@@ -436,6 +558,9 @@ brew_network_previous_state=""
 calendar_local_service_was_loaded=false
 network_local_service_was_loaded=false
 service_state_file_created=false
+backups_ready=false
+artifacts_modified=false
+services_modified=false
 installation_complete=false
 
 if service_is_loaded "$calendar_label"; then
@@ -456,40 +581,66 @@ restore_service_after_failure() {
   # Remove any partially bootstrapped replacement before restoring prior state.
   bootout_service "$label"
 
-  if [ "$local_service_was_loaded" = true ] && [ -f "$plist" ] && [ -x "$executable" ]; then
-    if bootstrap_service "$label" "$plist" >/dev/null 2>&1; then
+  if [ "$local_service_was_loaded" = true ]; then
+    if [ -f "$plist" ] && [ -x "$executable" ] && \
+      bootstrap_service "$label" "$plist" >/dev/null 2>&1; then
       return
     fi
+
+    echo "Could not restore local service: $label" >&2
   fi
 
-  if [ "$previous_state" = started ] && [ -n "$brew_command" ]; then
-    "$brew_command" services start "$formula" >/dev/null 2>&1 || true
+  if [ "$previous_state" = started ]; then
+    if [ -n "$brew_command" ] && \
+      "$brew_command" services start "$formula" >/dev/null 2>&1; then
+      return
+    fi
+
+    echo "Could not restore Homebrew service: $formula" >&2
+    return 1
   fi
+
+  [ "$local_service_was_loaded" = false ]
 }
 
 cleanup() {
   local status=$?
+  local restore_failed=false
   trap - EXIT
+  set +e
 
   if [ "$status" -ne 0 ] && [ "$installation_complete" = false ]; then
-    echo "Local installation failed; restoring previously active agent services" >&2
-    restore_service_after_failure \
-      "$calendar_label" \
-      "$calendar_plist" \
-      "$calendar_agent_destination/Contents/MacOS/EasyBarCalendarAgent" \
-      easybar-calendar-agent \
-      "$brew_calendar_previous_state" \
-      "$calendar_local_service_was_loaded"
-    restore_service_after_failure \
-      "$network_label" \
-      "$network_plist" \
-      "$network_agent_destination/Contents/MacOS/EasyBarNetworkAgent" \
-      easybar-network-agent \
-      "$brew_network_previous_state" \
-      "$network_local_service_was_loaded"
+    echo "Local installation failed; restoring the previous installation" >&2
+
+    if [ "$artifacts_modified" = true ] && [ "$backups_ready" = true ]; then
+      restore_installation_paths || restore_failed=true
+    else
+      discard_installation_backups || restore_failed=true
+    fi
+
+    if [ "$services_modified" = true ]; then
+      restore_service_after_failure \
+        "$calendar_label" \
+        "$calendar_plist" \
+        "$calendar_agent_destination/Contents/MacOS/EasyBarCalendarAgent" \
+        easybar-calendar-agent \
+        "$brew_calendar_previous_state" \
+        "$calendar_local_service_was_loaded" || restore_failed=true
+      restore_service_after_failure \
+        "$network_label" \
+        "$network_plist" \
+        "$network_agent_destination/Contents/MacOS/EasyBarNetworkAgent" \
+        easybar-network-agent \
+        "$brew_network_previous_state" \
+        "$network_local_service_was_loaded" || restore_failed=true
+    fi
 
     if [ "$service_state_file_created" = true ]; then
-      rm -f "$service_state_file"
+      rm -f "$service_state_file" || restore_failed=true
+    fi
+
+    if [ "$restore_failed" = true ]; then
+      echo "One or more previous installation resources could not be restored" >&2
     fi
   fi
 
@@ -512,6 +663,13 @@ if [ ! -w "$log_dir" ]; then
   echo "Agent log directory must be writable by the current user: $log_dir" >&2
   exit 1
 fi
+if [ ! -w "$state_dir" ]; then
+  echo "Local installer state directory must be writable by the current user: $state_dir" >&2
+  exit 1
+fi
+
+backup_installation_paths
+backups_ready=true
 
 if [ -f "$service_state_file" ]; then
   load_homebrew_state
@@ -522,6 +680,7 @@ else
   service_state_file_created=true
 fi
 
+services_modified=true
 stop_homebrew_service_if_started easybar-calendar-agent
 stop_homebrew_service_if_started easybar-network-agent
 
@@ -529,6 +688,7 @@ bootout_service "$calendar_label"
 bootout_service "$network_label"
 "$project_root/scripts/dev/stop-app.sh" --app-dir "$app_dir"
 
+artifacts_modified=true
 echo "Installing EasyBar.app into $app_destination"
 replace_bundle "$app_source" "$app_destination"
 
@@ -608,6 +768,10 @@ if [ "$launch_app" = true ]; then
 fi
 
 installation_complete=true
+if ! discard_installation_backups; then
+  echo "Warning: one or more local installation backups could not be removed" >&2
+fi
+backups_ready=false
 
 cat <<EOF_SUMMARY
 
