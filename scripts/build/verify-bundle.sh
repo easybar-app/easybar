@@ -5,6 +5,9 @@ usage() {
   echo "Usage: scripts/build/verify-bundle.sh [--arch <arm64|x86_64|universal>] [--version <version>] [--dist-dir <dir>]" >&2
 }
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+project_root="$(cd -- "$script_dir/../.." && pwd -P)"
+
 arch=""
 version="${VERSION:-dev}"
 dist_dir="${DIST_DIR:-dist}"
@@ -51,6 +54,10 @@ arm64 | x86_64 | universal) ;;
   exit 2
   ;;
 esac
+
+bundle_version="$(
+  python3 "$project_root/scripts/build/stamp.py" bundle-version --version "$version"
+)"
 
 app_name="EasyBar"
 calendar_agent_name="EasyBarCalendarAgent"
@@ -177,12 +184,12 @@ fi
 test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleIconFile' "$plist")" = "$app_icon_file"
 test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleIconFile' "$calendar_plist")" = "$calendar_icon_file"
 test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleIconFile' "$network_plist")" = "$network_icon_file"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$plist")" = "$version"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$plist")" = "$version"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$calendar_plist")" = "$version"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$calendar_plist")" = "$version"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$network_plist")" = "$version"
-test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$network_plist")" = "$version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$plist")" = "$bundle_version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$plist")" = "$bundle_version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$calendar_plist")" = "$bundle_version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$calendar_plist")" = "$bundle_version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleShortVersionString' "$network_plist")" = "$bundle_version"
+test "$('/usr/libexec/PlistBuddy' -c 'Print :CFBundleVersion' "$network_plist")" = "$bundle_version"
 
 app_version_output="$("$app_bin" --version)"
 cli_version_output="$("$cli_bin" --version)"
