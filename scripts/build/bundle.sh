@@ -410,8 +410,6 @@ codesign --force --deep --sign - "$network_bundle"
 codesign --force --deep --sign - "$app_bundle"
 codesign --force --sign - "$cli_bin"
 
-touch "$calendar_bundle" "$network_bundle" "$app_bundle"
-
 require_file "$app_resource_dir/Lua/runtime.lua" "staged runtime.lua"
 require_file "$app_resource_dir/Lua/easybar_api.lua" "staged Lua API stub"
 require_file "$app_resource_dir/Events/event_catalog.json" "staged event catalog"
