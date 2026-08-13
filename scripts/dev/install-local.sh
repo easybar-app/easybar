@@ -472,8 +472,9 @@ EOF_STATE
 
 stop_homebrew_service_if_started() {
   local formula="$1"
+  local state="$2"
 
-  if [ "$(homebrew_formula_state "$formula")" != started ]; then
+  if [ "$state" != started ]; then
     return
   fi
 
@@ -576,6 +577,8 @@ user_domain="gui/$user_id"
 brew_command="$(command -v brew || true)"
 brew_calendar_previous_state=""
 brew_network_previous_state=""
+brew_calendar_state_before_install="$(homebrew_formula_state easybar-calendar-agent)"
+brew_network_state_before_install="$(homebrew_formula_state easybar-network-agent)"
 calendar_local_service_was_loaded=false
 network_local_service_was_loaded=false
 service_state_file_created=false
@@ -596,32 +599,30 @@ restore_service_after_failure() {
   local plist="$2"
   local executable="$3"
   local formula="$4"
-  local previous_state="$5"
+  local homebrew_state_before_install="$5"
   local local_service_was_loaded="$6"
+  local failed=false
 
   # Remove any partially bootstrapped replacement before restoring prior state.
   bootout_service "$label"
 
   if [ "$local_service_was_loaded" = true ]; then
-    if [ -f "$plist" ] && [ -x "$executable" ] && \
-      bootstrap_service "$label" "$plist" >/dev/null 2>&1; then
-      return
+    if [ ! -f "$plist" ] || [ ! -x "$executable" ] || \
+      ! bootstrap_service "$label" "$plist" >/dev/null 2>&1; then
+      echo "Could not restore local service: $label" >&2
+      failed=true
     fi
-
-    echo "Could not restore local service: $label" >&2
   fi
 
-  if [ "$previous_state" = started ]; then
-    if [ -n "$brew_command" ] && \
-      "$brew_command" services start "$formula" >/dev/null 2>&1; then
-      return
+  if [ "$homebrew_state_before_install" = started ]; then
+    if [ -z "$brew_command" ] || \
+      ! "$brew_command" services start "$formula" >/dev/null 2>&1; then
+      echo "Could not restore Homebrew service: $formula" >&2
+      failed=true
     fi
-
-    echo "Could not restore Homebrew service: $formula" >&2
-    return 1
   fi
 
-  [ "$local_service_was_loaded" = false ]
+  [ "$failed" = false ]
 }
 
 cleanup() {
@@ -645,14 +646,14 @@ cleanup() {
         "$calendar_plist" \
         "$calendar_agent_destination/Contents/MacOS/EasyBarCalendarAgent" \
         easybar-calendar-agent \
-        "$brew_calendar_previous_state" \
+        "$brew_calendar_state_before_install" \
         "$calendar_local_service_was_loaded" || restore_failed=true
       restore_service_after_failure \
         "$network_label" \
         "$network_plist" \
         "$network_agent_destination/Contents/MacOS/EasyBarNetworkAgent" \
         easybar-network-agent \
-        "$brew_network_previous_state" \
+        "$brew_network_state_before_install" \
         "$network_local_service_was_loaded" || restore_failed=true
     fi
 
@@ -695,15 +696,19 @@ backups_ready=true
 if [ -f "$service_state_file" ]; then
   load_homebrew_state
 else
-  brew_calendar_previous_state="$(homebrew_formula_state easybar-calendar-agent)"
-  brew_network_previous_state="$(homebrew_formula_state easybar-network-agent)"
+  brew_calendar_previous_state="$brew_calendar_state_before_install"
+  brew_network_previous_state="$brew_network_state_before_install"
   write_homebrew_state
   service_state_file_created=true
 fi
 
 services_modified=true
-stop_homebrew_service_if_started easybar-calendar-agent
-stop_homebrew_service_if_started easybar-network-agent
+stop_homebrew_service_if_started \
+  easybar-calendar-agent \
+  "$brew_calendar_state_before_install"
+stop_homebrew_service_if_started \
+  easybar-network-agent \
+  "$brew_network_state_before_install"
 
 bootout_service "$calendar_label"
 bootout_service "$network_label"
