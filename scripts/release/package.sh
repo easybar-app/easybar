@@ -94,6 +94,7 @@ require_executable() {
 require_command cp
 require_command mktemp
 require_command mv
+require_command unzip
 require_command zip
 require_directory "$app_bundle" "app bundle"
 require_directory "$calendar_agent_bundle" "calendar agent bundle"
@@ -146,6 +147,10 @@ for archive in \
   "$network_agent_zip_stage"; do
   if [ ! -s "$archive" ]; then
     echo "Package archive is empty: $archive" >&2
+    exit 1
+  fi
+  if ! unzip -tqq "$archive"; then
+    echo "Package archive failed integrity validation: $archive" >&2
     exit 1
   fi
 done

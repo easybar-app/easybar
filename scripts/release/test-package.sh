@@ -73,7 +73,8 @@ fi
 count=$((count + 1))
 printf '%s\n' "$count" >"$FAKE_ZIP_COUNT_FILE"
 if [ "$count" -eq 2 ]; then
-  exit 1
+  printf 'invalid zip archive\n' >"$3"
+  exit 0
 fi
 exec "$REAL_ZIP" "$@"
 EOF_ZIP
@@ -85,7 +86,7 @@ if PATH="$fake_bin:$PATH" \
   "$repo_root/scripts/release/package.sh" \
   --version 9.8.7-dev.test \
   --dist-dir "$dist_dir" >/dev/null 2>&1; then
-  echo "Expected staged package creation to fail" >&2
+  echo "Expected invalid staged package to fail" >&2
   exit 1
 fi
 
