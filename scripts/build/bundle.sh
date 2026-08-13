@@ -133,6 +133,7 @@ require_command rsvg-convert "Install librsvg with: brew install librsvg"
 require_command magick "Install ImageMagick with: brew install imagemagick"
 require_command sips
 require_command iconutil
+require_command mktemp
 require_command python3
 
 # Reject malformed versions before resolving dependencies or changing distribution output.
@@ -190,26 +191,88 @@ while stack:
 raise SystemExit("easybar-kit dependency not found")'
 }
 
+final_dist_dir="$dist_dir"
+dist_stage=""
+dist_backup=""
 build_version_file=""
 build_version_file_existed=false
+build_version_state_active=false
 previous_build_version=""
 
-# Restores the EasyBarKit version-file state after bundling.
-restore_build_state() {
+path_exists() {
+  [ -e "$1" ] || [ -L "$1" ]
+}
+
+# Restores the EasyBarKit version file changed for this build.
+restore_build_version() {
+  if [ "$build_version_state_active" = false ]; then
+    return
+  fi
+
+  if [ "$build_version_file_existed" = true ]; then
+    printf '%s\n' "$previous_build_version" >"$build_version_file" || return
+  else
+    rm -f "$build_version_file" || return
+  fi
+
+  build_version_state_active=false
+}
+
+# Removes incomplete staging and restores any distribution moved during publication.
+cleanup() {
   local status=$?
   trap - EXIT
+  set +e
 
-  if [ -n "$build_version_file" ]; then
-    if [ "$build_version_file_existed" = true ]; then
-      printf '%s\n' "$previous_build_version" >"$build_version_file"
+  if ! restore_build_version; then
+    echo "Failed to restore EasyBarKit build-version state" >&2
+    status=1
+  fi
+
+  if [ -n "$dist_stage" ]; then
+    rm -rf "$dist_stage" || status=1
+  fi
+
+  if [ -n "$dist_backup" ]; then
+    if path_exists "$final_dist_dir"; then
+      rm -rf "$dist_backup" || status=1
     else
-      rm -f "$build_version_file"
+      mv "$dist_backup" "$final_dist_dir" || status=1
     fi
   fi
 
   exit "$status"
 }
-trap restore_build_state EXIT
+trap cleanup EXIT
+
+# Replaces the previous distribution only after the staged build is complete.
+publish_distribution() {
+  local dist_parent
+  local dist_name
+
+  dist_parent="$(dirname -- "$final_dist_dir")"
+  dist_name="$(basename -- "$final_dist_dir")"
+
+  if path_exists "$final_dist_dir"; then
+    dist_backup="$(mktemp -d "$dist_parent/.${dist_name}.previous.XXXXXX")"
+    rmdir "$dist_backup"
+    mv "$final_dist_dir" "$dist_backup"
+  fi
+
+  if ! mv "$dist_stage" "$final_dist_dir"; then
+    if [ -n "$dist_backup" ]; then
+      mv "$dist_backup" "$final_dist_dir"
+      dist_backup=""
+    fi
+    return 1
+  fi
+  dist_stage=""
+
+  if [ -n "$dist_backup" ]; then
+    rm -rf "$dist_backup"
+    dist_backup=""
+  fi
+}
 
 if [ -n "$kit_root" ]; then
   if [ ! -f "$kit_root/Package.swift" ]; then
@@ -230,10 +293,14 @@ if [ -f "$build_version_file" ]; then
   previous_build_version="$(<"$build_version_file")"
 fi
 mkdir -p "$(dirname "$build_version_file")"
+build_version_state_active=true
 printf '%s\n' "$version" >"$build_version_file"
 
-rm -rf "$dist_dir"
-mkdir -p "$dist_dir"
+dist_parent="$(dirname -- "$final_dist_dir")"
+dist_name="$(basename -- "$final_dist_dir")"
+mkdir -p "$dist_parent"
+dist_stage="$(mktemp -d "$dist_parent/.${dist_name}.build.XXXXXX")"
+dist_dir="$dist_stage"
 
 app_name="EasyBar"
 app_bundle="$dist_dir/${app_name}.app"
@@ -437,8 +504,11 @@ require_file "$app_icon_icns" "EasyBar icon"
 require_file "$calendar_icon_icns" "calendar agent icon"
 require_file "$network_icon_icns" "network agent icon"
 
+restore_build_version
+publish_distribution
+
 printf '\nBundle ready:\n'
-printf '  App:             %s\n' "$app_bundle"
-printf '  CLI:             %s\n' "$cli_bin"
-printf '  Calendar agent:  %s\n' "$calendar_bundle"
-printf '  Network agent:   %s\n' "$network_bundle"
+printf '  App:             %s/EasyBar.app\n' "$final_dist_dir"
+printf '  CLI:             %s/easybar\n' "$final_dist_dir"
+printf '  Calendar agent:  %s/EasyBarCalendarAgent.app\n' "$final_dist_dir"
+printf '  Network agent:   %s/EasyBarNetworkAgent.app\n' "$final_dist_dir"
