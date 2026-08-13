@@ -173,7 +173,6 @@ class ${class_name} < Formula
 
   def install
     libexec.install "${app_name}.app"
-    system "xattr", "-dr", "com.apple.quarantine", libexec/"${app_name}.app"
     (var/"log/easybar").mkpath
   end
 
