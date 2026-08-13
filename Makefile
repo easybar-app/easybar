@@ -185,6 +185,20 @@ clean-dist: ## Remove distribution output.
 				echo "Distribution directory must not be the project root or one of its parents: $$dist" >&2; \
 				exit 2 ;; \
 		esac; \
+		case "$$dist" in \
+			"$$project_root/.git" | "$$project_root/.git"/*) \
+				echo "Distribution directory must not be inside Git metadata: $$dist" >&2; \
+				exit 2 ;; \
+		esac; \
+		case "$$dist" in \
+			"$$project_root"/*) \
+				relative="$${dist#"$$project_root/"}"; \
+				tracked="$$(git ls-files -- ":(literal)$$relative")"; \
+				if [ -n "$$tracked" ]; then \
+					echo "Distribution directory contains tracked project files: $$dist" >&2; \
+					exit 2; \
+				fi ;; \
+		esac; \
 		rm -rf "$$dist"
 
 clean: clean-dist ## Remove SwiftPM and distribution output.

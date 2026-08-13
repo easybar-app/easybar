@@ -125,6 +125,7 @@ PY_PATH
 }
 
 require_command swift
+require_command git
 require_command install
 require_command codesign
 require_command lipo
@@ -152,6 +153,23 @@ case "$project_root" in
 "$dist_dir" | "$dist_dir"/*)
   echo "Distribution directory must not be the project root or one of its parents: $dist_dir" >&2
   exit 2
+  ;;
+esac
+
+case "$dist_dir" in
+"$project_root/.git" | "$project_root/.git"/*)
+  echo "Distribution directory must not be inside Git metadata: $dist_dir" >&2
+  exit 2
+  ;;
+esac
+
+case "$dist_dir" in
+"$project_root"/*)
+  relative_dist_dir=${dist_dir#"$project_root/"}
+  if [ -n "$(git -C "$project_root" ls-files -- ":(literal)$relative_dist_dir")" ]; then
+    echo "Distribution directory contains tracked project files: $dist_dir" >&2
+    exit 2
+  fi
   ;;
 esac
 

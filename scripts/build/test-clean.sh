@@ -20,6 +20,9 @@ assert_rejected() {
 assert_rejected . "must not be the project root"
 assert_rejected / "must not be the filesystem root"
 assert_rejected "$(dirname -- "$repo_root")" "must not be the project root"
+assert_rejected .git "must not be inside Git metadata"
+assert_rejected Sources "contains tracked project files"
+assert_rejected Makefile "contains tracked project files"
 
 safe_dist="$tmp_dir/dist"
 mkdir -p "$safe_dist/subdirectory"
