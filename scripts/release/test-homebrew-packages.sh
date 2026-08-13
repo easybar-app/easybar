@@ -26,7 +26,7 @@ git init --bare -q "${remote_dir}"
 git -C "${tap_dir}" remote add origin "${remote_dir}"
 git -C "${tap_dir}" push -qu -u origin main
 
-"${repo_root}/scripts/release/update-homebrew-cask.sh" \
+"${repo_root}/scripts/release/update-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \
   --version "${version}" \
@@ -94,7 +94,7 @@ ruby -c "${easybar_cask}" >/dev/null
 ruby -c "${calendar_formula}" >/dev/null
 ruby -c "${network_formula}" >/dev/null
 
-"${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+"${repo_root}/scripts/release/commit-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --version "${version}" \
   --dry-run >/dev/null
@@ -115,7 +115,7 @@ fi
 # Automated commits must include only generated package files.
 printf '%s\n' unrelated >"${tap_dir}/unrelated.txt"
 git -C "${tap_dir}" add unrelated.txt
-"${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+"${repo_root}/scripts/release/commit-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --version "${version}" >/dev/null
 
@@ -131,7 +131,7 @@ if [ "$(git -C "${tap_dir}" diff --cached --name-only)" != unrelated.txt ]; then
   exit 1
 fi
 no_change_output="$(
-  "${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+  "${repo_root}/scripts/release/commit-homebrew-packages.sh" \
     --tap-dir "${tap_dir}" \
     --version "${version}"
 )"
@@ -151,14 +151,14 @@ git -C "${tap_dir}" reset -q HEAD -- unrelated.txt
 rm "${tap_dir}/unrelated.txt"
 
 # The commit helper must also work on subsequent releases.
-"${repo_root}/scripts/release/update-homebrew-cask.sh" \
+"${repo_root}/scripts/release/update-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \
   --version "9.8.8" \
   --sha "${sha}" \
   --calendar-agent-sha "${calendar_agent_sha}" \
   --network-agent-sha "${network_agent_sha}"
-"${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+"${repo_root}/scripts/release/commit-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --version "9.8.8" \
   --dry-run >/dev/null
@@ -173,7 +173,7 @@ if grep -Fq 'postflight do' "${easybar_cask}"; then
   exit 1
 fi
 
-if "${repo_root}/scripts/release/update-homebrew-cask.sh" \
+if "${repo_root}/scripts/release/update-homebrew-packages.sh" \
   --tap-dir "${tap_dir}" \
   --repository 'invalid repository' \
   --version "9.8.8" \

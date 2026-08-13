@@ -60,10 +60,10 @@ jobs:
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
 
-      - name: Update EasyBar cask and agent formulas
+      - name: Update EasyBar Homebrew packages
         shell: bash
         run: |
-          scripts/release/update-homebrew-cask.sh \
+          scripts/release/update-homebrew-packages.sh \
             --tap-dir homebrew-tap \
             --repository "${GITHUB_REPOSITORY}" \
             --version "${{ steps.vars.outputs.version }}" \
@@ -74,6 +74,6 @@ jobs:
       - name: Commit and push Homebrew package changes
         shell: bash
         run: |
-          scripts/release/commit-homebrew-cask.sh \
+          scripts/release/commit-homebrew-packages.sh \
             --tap-dir homebrew-tap \
             --version "${{ steps.vars.outputs.version }}"
