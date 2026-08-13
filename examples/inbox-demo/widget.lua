@@ -136,28 +136,7 @@ local function make_demo_items()
 	}
 end
 
----@type EasyBarInboxItem[]
-local items = {}
 local source_busy = false
-
---- Copies one item so publishing cannot mutate the local demo state.
----@param item EasyBarInboxItem
----@return EasyBarInboxItem copy
-local function copy_item(item)
-	return {
-		id = item.id,
-		title = item.title,
-		body = item.body,
-		format = item.format,
-		timestamp = item.timestamp,
-		category = item.category,
-		severity = item.severity,
-		unread = item.unread,
-		dismissible = item.dismissible,
-		source = item.source,
-		url = item.url,
-	}
-end
 
 --- Publishes the source context actions for the current busy state.
 local function configure_source_actions()
@@ -175,18 +154,9 @@ local function configure_source_actions()
 	easybar.inbox.configure(SOURCE, { order = DEMO_ORDER, actions = actions })
 end
 
---- Restores a fresh mutable snapshot with current relative timestamps.
-local function reset_items()
-	items = make_demo_items()
-end
-
---- Publishes the current demo snapshot without affecting real inbox sources.
-local function publish()
-	local snapshot = {}
-	for _, item in ipairs(items) do
-		snapshot[#snapshot + 1] = copy_item(item)
-	end
-	easybar.inbox.replace(SOURCE, snapshot)
+--- Publishes a fresh demo snapshot without affecting real inbox sources.
+local function publish_demo()
+	easybar.inbox.replace(SOURCE, make_demo_items())
 end
 
 configure_source_actions()
@@ -196,14 +166,12 @@ easybar.inbox.on_context_action(SOURCE, function(event)
 		source_busy = true
 		configure_source_actions()
 		easybar.after(DEMO_DELAY_SECONDS, function()
-			reset_items()
 			source_busy = false
 			configure_source_actions()
-			publish()
+			publish_demo()
 		end)
 	elseif event.action_id == "clear" then
-		items = {}
-		publish()
+		easybar.inbox.clear(SOURCE)
 	end
 end)
 
