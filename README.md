@@ -15,7 +15,8 @@ widgets with custom Lua widgets and integrates with AeroSpace.
 - AeroSpace integration and separate calendar and network helper agents
 - Menu-bar controller and CLI for runtime control and diagnostics
 
-See more screenshots in the [documentation](https://easybar.dev/).
+See more screenshots in the [EasyBar overview](https://easybar.dev/products/easybar/) and the
+[built-in widget guides](https://easybar.dev/products/easybar/configuration/builtins/).
 
 ## Requirements
 
