@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout EasyBar
         uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Derive asset URLs
         id: vars
