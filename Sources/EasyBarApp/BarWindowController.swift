@@ -8,7 +8,6 @@ import SwiftUI
 final class BarWindowController: NSWindowController, EasyBarSurfaceController {
   private let context: EasyBarSurfaceContext
   private let presentationModel: EasyBarPresentationModel
-  private let hostingView: BarHostingView<AnyView>
 
   /// Creates the fixed top-edge window for one shared EasyBar surface context.
   init(context: EasyBarSurfaceContext) {
@@ -21,10 +20,6 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     context.logger.debug(
       "bar window initial",
       .field("target_frame", NSStringFromRect(frame))
-    )
-
-    let contentView = AnyView(
-      BarContentView(presentationModel: context.presentationModel)
     )
 
     let window = BarPanel(
@@ -49,17 +44,15 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
       .fullScreenAuxiliary,
       .ignoresCycle,
     ]
-    window.setContentSize(frame.size)
-    window.minSize = frame.size
-    window.maxSize = frame.size
 
-    let hostingView = BarHostingView(rootView: contentView)
+    let hostingView = BarHostingView(
+      rootView: BarContentView(presentationModel: context.presentationModel)
+    )
     hostingView.frame = NSRect(origin: .zero, size: frame.size)
     hostingView.autoresizingMask = [.width, .height]
     window.contentView = hostingView
-    window.setFrame(frame, display: false)
 
-    self.hostingView = hostingView
+    Self.apply(frame: frame, to: window, display: false)
 
     super.init(window: window)
 
@@ -74,7 +67,7 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     nil
   }
 
-  /// Rebuilds the hosted SwiftUI root and reapplies screen-dependent bar geometry.
+  /// Reapplies screen-dependent bar geometry after presentation settings change.
   func reloadLayout() {
     guard let window else {
       context.logger.warn("bar window reloadLayout skipped because window is unavailable")
@@ -84,14 +77,7 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     let screen = window.screen ?? NSScreen.main ?? NSScreen.screens[0]
     let frame = Self.makeFrame(for: screen, style: presentationModel.barStyle)
 
-    hostingView.rootView = AnyView(
-      BarContentView(presentationModel: presentationModel)
-    )
-    window.setFrame(frame, display: true)
-    window.setContentSize(frame.size)
-    window.minSize = frame.size
-    window.maxSize = frame.size
-    hostingView.frame = NSRect(origin: .zero, size: frame.size)
+    Self.apply(frame: frame, to: window, display: true)
   }
 
   /// Presents the bar above normal application windows without activating it.
@@ -101,7 +87,6 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
       return
     }
 
-    window.setFrame(window.frame, display: true)
     window.orderFrontRegardless()
   }
 
@@ -112,8 +97,16 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
 
   /// Closes the bar window and releases its AppKit resources.
   func stop() {
+    (window as? BarPanel)?.contextMenuProvider = nil
     window?.orderOut(nil)
     close()
+  }
+
+  /// Applies a fixed panel frame without retaining constraints from the previous bar height.
+  private static func apply(frame: NSRect, to window: NSWindow, display: Bool) {
+    window.minSize = frame.size
+    window.maxSize = frame.size
+    window.setFrame(frame, display: display)
   }
 
   /// Computes the screen frame used by the current bar appearance.

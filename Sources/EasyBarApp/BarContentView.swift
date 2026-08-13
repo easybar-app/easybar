@@ -40,5 +40,4 @@ struct BarContentView: View {
     .foregroundStyle(style.text)
     .ignoresSafeArea()
   }
-
 }
