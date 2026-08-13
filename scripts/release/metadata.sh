@@ -41,23 +41,43 @@ is_valid_sha256() {
   [[ "$1" =~ ^[0-9a-f]{64}$ ]]
 }
 
-# Prints the newest valid release tag reachable from a Git revision.
+# Prints the highest valid SemVer release tag reachable from a Git revision.
 latest_release_tag() {
   local repository_root="$1"
   local revision="${2:-HEAD}"
   local tag
+  local tags=()
 
   while IFS= read -r tag; do
     if is_valid_release_tag "$tag"; then
-      printf '%s\n' "$tag"
-      return 0
+      tags+=("$tag")
     fi
-  done < <(
-    git -C "$repository_root" tag \
-      --merged "$revision" \
-      --list 'v*' \
-      --sort=-v:refname
-  )
+  done < <(git -C "$repository_root" tag --merged "$revision" --list 'v*')
 
-  return 0
+  if [ "${#tags[@]}" -eq 0 ]; then
+    return 0
+  fi
+
+  printf '%s\n' "${tags[@]}" | python3 -c '
+import sys
+
+
+def prerelease_key(identifier):
+    if identifier.isdigit():
+        return (0, int(identifier))
+    return (1, identifier)
+
+
+def version_key(tag):
+    version = tag[1:]
+    core, separator, prerelease = version.partition("-")
+    major, minor, patch = (int(component) for component in core.split("."))
+    if not separator:
+        return (major, minor, patch, 1, ())
+    identifiers = tuple(prerelease_key(value) for value in prerelease.split("."))
+    return (major, minor, patch, 0, identifiers)
+
+
+print(max((line.rstrip("\n") for line in sys.stdin), key=version_key))
+'
 }

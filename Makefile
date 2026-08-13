@@ -56,6 +56,7 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-derive-release-vars.sh
 	@scripts/release/test-homebrew-cask-update.sh
+	@scripts/release/test-metadata.sh
 	@scripts/release/test-package.sh
 
 check: test lint check-scripts ## Run the complete repository verification suite.
