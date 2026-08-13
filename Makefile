@@ -22,13 +22,13 @@ CALENDAR_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarCalendarAgent-$(VERSION).zip
 NETWORK_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarNetworkAgent-$(VERSION).zip
 
 VERSION_PREFIX ?= v
-LATEST_TAG := $(shell git tag --list '$(VERSION_PREFIX)*' --sort=-v:refname | head -n 1)
-CURRENT_VERSION := $(if $(LATEST_TAG),$(patsubst $(VERSION_PREFIX)%,%,$(LATEST_TAG)),0.0.0)
-CURRENT_CORE_VERSION := $(firstword $(subst -, ,$(CURRENT_VERSION)))
+LATEST_TAG = $(shell git tag --merged HEAD --list '$(VERSION_PREFIX)*' --sort=-v:refname | head -n 1)
+CURRENT_VERSION = $(if $(LATEST_TAG),$(patsubst $(VERSION_PREFIX)%,%,$(LATEST_TAG)),0.0.0)
+CURRENT_CORE_VERSION = $(firstword $(subst -, ,$(CURRENT_VERSION)))
 
-NEXT_PATCH := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m}.{n}.{p+1}")')
-NEXT_MINOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m}.{n+1}.0")')
-NEXT_MAJOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(".")); print(f"{m+1}.0.0")')
+NEXT_PATCH = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m}.{n}.{p+1}")' "$(CURRENT_CORE_VERSION)")
+NEXT_MINOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m}.{n+1}.0")' "$(CURRENT_CORE_VERSION)")
+NEXT_MAJOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m+1}.0.0")' "$(CURRENT_CORE_VERSION)")
 
 .DEFAULT_GOAL := help
 
@@ -53,6 +53,7 @@ test: ## Run EasyBar frontend unit tests.
 check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/build/test-stamp.py
 	@scripts/release/test-archive-utils.sh
+	@scripts/release/test-derive-release-vars.sh
 	@scripts/release/test-homebrew-cask-update.sh
 
 check: test lint check-scripts ## Run the complete repository verification suite.

@@ -109,5 +109,4 @@ jobs:
         shell: bash
         run: |
           gh workflow run update-homebrew-cask.yml \
-            -f tag="${{ steps.version.outputs.tag }}" \
-            -f version="${{ steps.version.outputs.version }}"
+            -f tag="${{ steps.version.outputs.tag }}"

@@ -7,10 +7,6 @@ on:
         description: Release tag
         required: true
         type: string
-      version:
-        description: Release version without leading v
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -28,11 +24,9 @@ jobs:
         shell: bash
         env:
           INPUT_TAG: ${{ inputs.tag }}
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
           scripts/release/derive-release-vars.sh \
             --tag "${INPUT_TAG}" \
-            --version "${INPUT_VERSION}" \
             --repository "${GITHUB_REPOSITORY}"
 
       - name: Download release archives
