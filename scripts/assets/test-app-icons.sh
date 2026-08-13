@@ -21,7 +21,7 @@ assert_rejected() {
   fi
 }
 
-if output="$($script missing-svg-tool missing-image-tool '' icon.svg:EasyBar.icns 2>&1)"; then
+if output="$("$script" missing-svg-tool missing-image-tool '' icon.svg:EasyBar.icns 2>&1)"; then
   echo "Expected an empty icon staging directory to fail" >&2
   exit 1
 fi
@@ -30,7 +30,7 @@ if [[ "$output" != *"must not be empty"* ]]; then
   exit 1
 fi
 
-if output="$($script missing-svg-tool missing-image-tool / icon.svg:EasyBar.icns 2>&1)"; then
+if output="$("$script" missing-svg-tool missing-image-tool / icon.svg:EasyBar.icns 2>&1)"; then
   echo "Expected the filesystem root icon staging directory to fail" >&2
   exit 1
 fi
