@@ -24,6 +24,18 @@ assert_rejected .git "must not be inside Git metadata"
 assert_rejected Sources "contains tracked project files"
 assert_rejected Makefile "contains tracked project files"
 
+symlink_target="$tmp_dir/symlink-target"
+symlink_path="$repo_root/.test-clean-symlink.$$"
+mkdir -p "$symlink_target"
+touch "$symlink_target/preserved"
+ln -s "$symlink_target" "$symlink_path"
+assert_rejected "$symlink_path" "must not be a symbolic link"
+rm -f "$symlink_path"
+if [ ! -f "$symlink_target/preserved" ]; then
+  echo "Rejected distribution symlink modified its target" >&2
+  exit 1
+fi
+
 safe_dist="$tmp_dir/dist"
 mkdir -p "$safe_dist/subdirectory"
 touch "$safe_dist/subdirectory/file"

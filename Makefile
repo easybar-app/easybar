@@ -176,6 +176,10 @@ clean-dist: ## Remove distribution output.
 			/*) dist="$(DIST_DIR)" ;; \
 			*) dist="$$project_root/$(DIST_DIR)" ;; \
 		esac; \
+		if [ -L "$$dist" ]; then \
+			echo "Distribution directory must not be a symbolic link: $$dist" >&2; \
+			exit 2; \
+		fi; \
 		dist="$$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$$dist")"; \
 		if [ "$$dist" = / ]; then \
 			echo "Distribution directory must not be the filesystem root" >&2; \

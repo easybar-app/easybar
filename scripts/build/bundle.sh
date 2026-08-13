@@ -143,6 +143,10 @@ case "$dist_dir" in
 /*) ;;
 *) dist_dir="$project_root/$dist_dir" ;;
 esac
+if [ -L "$dist_dir" ]; then
+  echo "Distribution directory must not be a symbolic link: $dist_dir" >&2
+  exit 2
+fi
 dist_dir="$(canonical_path "$dist_dir")"
 
 if [ "$dist_dir" = / ]; then
