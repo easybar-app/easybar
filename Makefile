@@ -1,9 +1,7 @@
 EASYBAR_KIT_ROOT ?= ../easybar-kit
 SWIFT ?= swift
 PRETTIER ?= npx --yes prettier@3.9.6
-PRETTIER_MD_SOURCES := README.md
-PRETTIER_YAML_SOURCES := ".github/**/*.{yml,yaml}"
-PRETTIER_JSON_SOURCES := ".github/**/*.json"
+PRETTIER_SOURCES := $(shell git ls-files -- '*.md' '*.yml' '*.yaml' '*.json')
 
 DIST_DIR ?= dist
 BUNDLE_ID ?= io.github.gi8lino.easybar
@@ -34,7 +32,7 @@ NEXT_MAJOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split("."
 .PHONY: help build test check check-scripts run support \
         bundle package release verify verify-release print-package-sha256 \
         bundle-local update install-local uninstall-local stop restart-app print-local-version \
-        fmt fmt-swift fmt-md fmt-yaml fmt-json lint lint-swift \
+        fmt fmt-swift fmt-prettier lint lint-swift lint-prettier \
         clean clean-dist \
         tag-patch tag-minor tag-major push-tags tag
 
@@ -152,24 +150,21 @@ print-local-version: ## Print the Git-derived version used by install-local.
 
 ##@ Formatting
 
-fmt: fmt-swift fmt-md fmt-yaml fmt-json ## Format supported source files.
+fmt: fmt-swift fmt-prettier ## Format supported source files.
 
 fmt-swift: ## Format Swift sources.
 	@$(SWIFT) format format --in-place --recursive --parallel Sources Tests
 
-fmt-md: ## Format Markdown files.
-	@$(PRETTIER) --write $(PRETTIER_MD_SOURCES)
+fmt-prettier: ## Format tracked Markdown, YAML, and JSON files.
+	@$(PRETTIER) --write $(PRETTIER_SOURCES)
 
-fmt-yaml: ## Format YAML files.
-	@$(PRETTIER) --write $(PRETTIER_YAML_SOURCES)
-
-fmt-json: ## Format JSON files.
-	@$(PRETTIER) --write $(PRETTIER_JSON_SOURCES)
-
-lint: lint-swift ## Check formatting without changing files.
+lint: lint-swift lint-prettier ## Check formatting without changing files.
 
 lint-swift: ## Check Swift formatting.
 	@$(SWIFT) format lint --recursive Sources Tests
+
+lint-prettier: ## Check tracked Markdown, YAML, and JSON formatting.
+	@$(PRETTIER) --check $(PRETTIER_SOURCES)
 
 ##@ Cleanup
 
