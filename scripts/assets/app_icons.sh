@@ -39,6 +39,17 @@ image_convert=$2
 dist_dir=$3
 shift 3
 
+case "$dist_dir" in
+"")
+  echo "Icon staging directory must not be empty" >&2
+  exit 2
+  ;;
+/)
+  echo "Icon staging directory must not be the filesystem root" >&2
+  exit 2
+  ;;
+esac
+
 for spec in "$@"; do
   case "$spec" in
     *:*) ;;
