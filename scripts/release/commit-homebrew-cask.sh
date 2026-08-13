@@ -71,7 +71,7 @@ if [ "$dry_run" = true ]; then
 fi
 
 git add -A -- "${package_paths[@]}"
-if git diff --cached --quiet; then
+if git diff --cached --quiet -- "${package_paths[@]}"; then
   echo "No changes to commit."
   exit 0
 fi
@@ -79,5 +79,5 @@ fi
 git \
   -c user.name="github-actions[bot]" \
   -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-  commit -m "chore(homebrew): update EasyBar to ${version}"
+  commit --only -m "chore(homebrew): update EasyBar to ${version}" -- "${package_paths[@]}"
 git push

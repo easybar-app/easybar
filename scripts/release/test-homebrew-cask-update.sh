@@ -12,13 +12,19 @@ sha="0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 calendar_agent_sha="1123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 network_agent_sha="2123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
+remote_dir="${tmp_dir}/homebrew-tap.git"
 mkdir -p "${tap_dir}/Formula"
 git -C "${tap_dir}" init -q
+git -C "${tap_dir}" config commit.gpgsign false
 touch "${tap_dir}/Formula/easybar-calendar-agent.rb" \
   "${tap_dir}/Formula/easybar-network-agent.rb"
 git -C "${tap_dir}" add Formula
 git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
-  -c commit.gpgsign=false commit -qm fixture
+  commit -qm fixture
+git -C "${tap_dir}" branch -M main
+git init --bare -q "${remote_dir}"
+git -C "${tap_dir}" remote add origin "${remote_dir}"
+git -C "${tap_dir}" push -qu -u origin main
 
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
@@ -106,10 +112,45 @@ if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
   exit 1
 fi
 
+# Automated commits must include only generated package files.
+printf '%s\n' unrelated >"${tap_dir}/unrelated.txt"
+git -C "${tap_dir}" add unrelated.txt
+"${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+  --tap-dir "${tap_dir}" \
+  --version "${version}" >/dev/null
+
+committed_paths="$(git -C "${tap_dir}" show --format= --name-only HEAD | sort)"
+expected_paths=$'Casks/easybar.rb\nFormula/easybar-calendar-agent.rb\nFormula/easybar-network-agent.rb'
+if [ "${committed_paths}" != "${expected_paths}" ]; then
+  echo "Unexpected files in automated Homebrew commit:" >&2
+  printf '%s\n' "${committed_paths}" >&2
+  exit 1
+fi
+if [ "$(git -C "${tap_dir}" diff --cached --name-only)" != unrelated.txt ]; then
+  echo "Unrelated staged change was not preserved." >&2
+  exit 1
+fi
+no_change_output="$(
+  "${repo_root}/scripts/release/commit-homebrew-cask.sh" \
+    --tap-dir "${tap_dir}" \
+    --version "${version}"
+)"
+if [ "${no_change_output}" != "No changes to commit." ]; then
+  echo "Unexpected no-change output: ${no_change_output}" >&2
+  exit 1
+fi
+if [ "$(git -C "${tap_dir}" diff --cached --name-only)" != unrelated.txt ]; then
+  echo "No-change commit check altered an unrelated staged change." >&2
+  exit 1
+fi
+if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
+  echo "Automated commit unexpectedly changed the tap's Git identity." >&2
+  exit 1
+fi
+git -C "${tap_dir}" reset -q HEAD -- unrelated.txt
+rm "${tap_dir}/unrelated.txt"
+
 # The commit helper must also work on subsequent releases.
-git -C "${tap_dir}" add -A -- Casks Formula
-git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
-  -c commit.gpgsign=false commit -qm "publish cask"
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
   --tap-dir "${tap_dir}" \
   --repository easybar-app/easybar \
