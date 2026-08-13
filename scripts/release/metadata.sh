@@ -40,3 +40,24 @@ is_valid_github_repository() {
 is_valid_sha256() {
   [[ "$1" =~ ^[0-9a-f]{64}$ ]]
 }
+
+# Prints the newest valid release tag reachable from a Git revision.
+latest_release_tag() {
+  local repository_root="$1"
+  local revision="${2:-HEAD}"
+  local tag
+
+  while IFS= read -r tag; do
+    if is_valid_release_tag "$tag"; then
+      printf '%s\n' "$tag"
+      return 0
+    fi
+  done < <(
+    git -C "$repository_root" tag \
+      --merged "$revision" \
+      --list 'v*' \
+      --sort=-v:refname
+  )
+
+  return 0
+}

@@ -56,6 +56,11 @@ if ! is_valid_release_tag "$tag"; then
   exit 1
 fi
 
+if [ -n "$repository" ] && ! is_valid_github_repository "$repository"; then
+  echo "::error::Invalid GitHub repository: $repository" >&2
+  exit 1
+fi
+
 version="${tag#v}"
 write_output "tag" "$tag"
 write_output "version" "$version"

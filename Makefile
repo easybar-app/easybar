@@ -21,9 +21,8 @@ PACKAGE_ZIP := $(DIST_DIR)/EasyBar-$(VERSION).zip
 CALENDAR_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarCalendarAgent-$(VERSION).zip
 NETWORK_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarNetworkAgent-$(VERSION).zip
 
-VERSION_PREFIX ?= v
-LATEST_TAG = $(shell git tag --merged HEAD --list '$(VERSION_PREFIX)*' --sort=-v:refname | head -n 1)
-CURRENT_VERSION = $(if $(LATEST_TAG),$(patsubst $(VERSION_PREFIX)%,%,$(LATEST_TAG)),0.0.0)
+LATEST_TAG = $(shell bash -c '. scripts/release/metadata.sh; latest_release_tag . HEAD')
+CURRENT_VERSION = $(if $(LATEST_TAG),$(patsubst v%,%,$(LATEST_TAG)),0.0.0)
 CURRENT_CORE_VERSION = $(firstword $(subst -, ,$(CURRENT_VERSION)))
 
 NEXT_PATCH = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m}.{n}.{p+1}")' "$(CURRENT_CORE_VERSION)")
@@ -52,6 +51,7 @@ test: ## Run EasyBar frontend unit tests.
 
 check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/build/test-stamp.py
+	@scripts/dev/test-local-version.sh
 	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-derive-release-vars.sh
 	@scripts/release/test-homebrew-cask-update.sh
@@ -110,7 +110,7 @@ run: support ## Run EasyBar directly from the source checkout.
 		EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) run EasyBar
 
 bundle-local: ## Build a complete local EasyBar.app using the sibling EasyBarKit checkout.
-	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
+	@local_version="$$(scripts/dev/local-version.sh --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
 		echo "Building local EasyBar version $$local_version"; \
 		scripts/build/bundle.sh \
 			--kit-root "$(EASYBAR_KIT_ROOT)" \
@@ -144,7 +144,7 @@ restart-app: stop ## Restart the locally installed EasyBar application.
 	@open "$(LOCAL_APP_DIR)/EasyBar.app"
 
 print-local-version: ## Print the Git-derived version used by install-local.
-	@scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)"
+	@scripts/dev/local-version.sh --dependency-root "$(EASYBAR_KIT_ROOT)"
 
 ##@ Formatting
 
@@ -178,16 +178,16 @@ clean: clean-dist ## Remove SwiftPM and distribution output.
 ##@ Tagging
 
 tag-patch: ## Create the next patch tag locally.
-	@git tag -a "$(VERSION_PREFIX)$(NEXT_PATCH)" -m "Release $(VERSION_PREFIX)$(NEXT_PATCH)"
-	@echo "Created tag $(VERSION_PREFIX)$(NEXT_PATCH)"
+	@git tag -a "v$(NEXT_PATCH)" -m "Release v$(NEXT_PATCH)"
+	@echo "Created tag v$(NEXT_PATCH)"
 
 tag-minor: ## Create the next minor tag locally.
-	@git tag -a "$(VERSION_PREFIX)$(NEXT_MINOR)" -m "Release $(VERSION_PREFIX)$(NEXT_MINOR)"
-	@echo "Created tag $(VERSION_PREFIX)$(NEXT_MINOR)"
+	@git tag -a "v$(NEXT_MINOR)" -m "Release v$(NEXT_MINOR)"
+	@echo "Created tag v$(NEXT_MINOR)"
 
 tag-major: ## Create the next major tag locally.
-	@git tag -a "$(VERSION_PREFIX)$(NEXT_MAJOR)" -m "Release $(VERSION_PREFIX)$(NEXT_MAJOR)"
-	@echo "Created tag $(VERSION_PREFIX)$(NEXT_MAJOR)"
+	@git tag -a "v$(NEXT_MAJOR)" -m "Release v$(NEXT_MAJOR)"
+	@echo "Created tag v$(NEXT_MAJOR)"
 
 push-tags: ## Push commits and tags to origin.
 	@git push --follow-tags

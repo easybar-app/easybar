@@ -30,3 +30,11 @@ if "$repo_root/scripts/release/derive-release-vars.sh" \
   echo "The removed --version compatibility option was unexpectedly accepted" >&2
   exit 1
 fi
+
+
+if "$repo_root/scripts/release/derive-release-vars.sh" \
+  --tag v1.2.3 \
+  --repository 'invalid repository' >/dev/null 2>&1; then
+  echo "Expected invalid GitHub repository metadata to fail" >&2
+  exit 1
+fi
