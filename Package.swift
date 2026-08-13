@@ -1,10 +1,6 @@
-// swift-tools-version: 5.10
+// swift-tools-version: 6.2
 
 import PackageDescription
-
-let strictConcurrencySettings: [SwiftSetting] = [
-  .enableUpcomingFeature("StrictConcurrency")
-]
 
 let package = Package(
   name: "EasyBar",
@@ -20,7 +16,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/easybar-app/easybar-kit",
-      from: "0.2.3"
+      from: "0.2.5"
     )
   ],
   targets: [
@@ -39,24 +35,18 @@ let package = Package(
       path: "Sources/EasyBarApp",
       exclude: [
         "Info.plist"
-      ],
-      swiftSettings: strictConcurrencySettings
+      ]
     ),
     .testTarget(
       name: "EasyBarAppTests",
       dependencies: [
         "EasyBarApp",
         .product(
-          name: "EasyBarKit",
-          package: "easybar-kit"
-        ),
-        .product(
           name: "EasyBarShared",
           package: "easybar-kit"
         ),
       ],
-      path: "Tests/EasyBarAppTests",
-      swiftSettings: strictConcurrencySettings
+      path: "Tests/EasyBarAppTests"
     ),
   ]
 )

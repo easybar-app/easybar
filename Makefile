@@ -32,7 +32,7 @@ NEXT_MAJOR := $(shell python3 -c 'm,n,p=map(int,"$(CURRENT_CORE_VERSION)".split(
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test check check-concurrency check-release-scripts run support \
+.PHONY: help build test check check-release-scripts run support \
         bundle package release verify verify-release print-package-sha256 \
         bundle-local update install-local uninstall-local stop restart-app print-local-version \
         fmt fmt-swift fmt-md fmt-yaml fmt-json lint lint-swift \
@@ -50,14 +50,11 @@ build: ## Build the customizable EasyBar frontend.
 test: ## Run EasyBar frontend unit tests.
 	@$(SWIFT) test --disable-sandbox
 
-check-concurrency: ## Build with complete strict concurrency checking.
-	@$(SWIFT) build -Xswiftc -strict-concurrency=complete
-
 check-release-scripts: ## Test release archives, Homebrew cask, and agent formula generation.
 	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-homebrew-cask-update.sh
 
-check: test check-concurrency lint check-release-scripts ## Run the complete repository verification suite.
+check: test lint check-release-scripts ## Run the complete repository verification suite.
 
 ##@ Packaging
 
