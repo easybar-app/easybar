@@ -97,14 +97,50 @@ require_command() {
   fi
 }
 
-require_path() {
+require_directory() {
   local path="$1"
   local label="$2"
 
-  if [ ! -e "$path" ]; then
+  if [ ! -d "$path" ]; then
     echo "Missing ${label}: ${path}" >&2
     exit 1
   fi
+}
+
+require_executable() {
+  local path="$1"
+  local label="$2"
+
+  if [ ! -f "$path" ] || [ ! -x "$path" ]; then
+    echo "Missing executable ${label}: ${path}" >&2
+    exit 1
+  fi
+}
+
+read_artifact_version() {
+  local executable="$1"
+  local display_name="$2"
+  local output
+  local version
+
+  if ! output="$("$executable" --version)"; then
+    echo "Could not read ${display_name} version from ${executable}" >&2
+    exit 1
+  fi
+
+  case "$output" in
+    "$display_name "*) version=${output#"$display_name "} ;;
+    *)
+      echo "Unexpected ${display_name} version output: ${output}" >&2
+      exit 1
+      ;;
+  esac
+  if [ -z "$version" ]; then
+    echo "Empty ${display_name} version output: ${output}" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$output"
 }
 
 ensure_directory() {
@@ -344,6 +380,29 @@ stop_homebrew_service_if_started() {
   "$brew_command" services stop "$formula" >/dev/null
 }
 
+app_source="$dist_dir/EasyBar.app"
+calendar_agent_source="$dist_dir/EasyBarCalendarAgent.app"
+network_agent_source="$dist_dir/EasyBarNetworkAgent.app"
+cli_source="$dist_dir/easybar"
+app_source_executable="$app_source/Contents/MacOS/EasyBar"
+calendar_agent_source_executable="$calendar_agent_source/Contents/MacOS/EasyBarCalendarAgent"
+network_agent_source_executable="$network_agent_source/Contents/MacOS/EasyBarNetworkAgent"
+
+require_directory "$app_source" "EasyBar app bundle"
+require_directory "$calendar_agent_source" "calendar agent bundle"
+require_directory "$network_agent_source" "network agent bundle"
+require_executable "$app_source_executable" "EasyBar app"
+require_executable "$calendar_agent_source_executable" "calendar agent"
+require_executable "$network_agent_source_executable" "network agent"
+require_executable "$cli_source" "EasyBar CLI"
+
+source_app_version_output="$(read_artifact_version "$app_source_executable" EasyBar)"
+source_cli_version_output="$(read_artifact_version "$cli_source" easybar)"
+if [ "${source_app_version_output#EasyBar }" != "${source_cli_version_output#easybar }" ]; then
+  echo "Source app and CLI versions do not match: ${source_app_version_output}; ${source_cli_version_output}" >&2
+  exit 1
+fi
+
 require_command awk
 require_command ditto
 require_command grep
@@ -353,16 +412,6 @@ if [ "$launch_app" = true ]; then
   require_command open
 fi
 require_command plutil
-
-app_source="$dist_dir/EasyBar.app"
-calendar_agent_source="$dist_dir/EasyBarCalendarAgent.app"
-network_agent_source="$dist_dir/EasyBarNetworkAgent.app"
-cli_source="$dist_dir/easybar"
-
-require_path "$app_source" "EasyBar app bundle"
-require_path "$calendar_agent_source" "calendar agent bundle"
-require_path "$network_agent_source" "network agent bundle"
-require_path "$cli_source" "EasyBar CLI"
 
 app_destination="${app_dir%/}/EasyBar.app"
 calendar_agent_destination="${agent_dir%/}/EasyBarCalendarAgent.app"
@@ -545,12 +594,9 @@ launchctl print "$(service_target "$network_label")" >/dev/null
 
 installed_app_version="$("$app_destination/Contents/MacOS/EasyBar" --version)"
 installed_cli_version="$("$cli_destination" --version)"
-app_version="${installed_app_version#EasyBar }"
-cli_version="${installed_cli_version#easybar }"
-if [ "$app_version" = "$installed_app_version" ] || \
-  [ "$cli_version" = "$installed_cli_version" ] || \
-  [ "$app_version" != "$cli_version" ]; then
-  echo "Installed app and CLI versions do not match: $installed_app_version; $installed_cli_version" >&2
+if [ "$installed_app_version" != "$source_app_version_output" ] || \
+  [ "$installed_cli_version" != "$source_cli_version_output" ]; then
+  echo "Installed artifact versions changed during installation: $installed_app_version; $installed_cli_version" >&2
   exit 1
 fi
 echo "Installed $installed_app_version"
