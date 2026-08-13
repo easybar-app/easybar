@@ -22,36 +22,18 @@ local function apply_event(event)
 	state.vpn_connected = event.network.primary_interface_is_tunnel == true
 end
 
---- Returns display content for the current VPN connection state.
----@return table status Icon, label, and color fields.
-local function current_state()
-	if state.vpn_connected then
-		return {
-			icon = "󰦝",
-			label = "VPN On",
-			color = COLORS.connected,
-		}
-	end
-
-	return {
-		icon = "󰌾",
-		label = "VPN Off",
-		color = COLORS.disconnected,
-	}
-end
-
 --- Updates the VPN widget from the latest native network state.
 local function render()
-	local status = current_state()
+	local color = state.vpn_connected and COLORS.connected or COLORS.disconnected
 
 	vpn:set({
 		icon = {
-			string = status.icon,
-			color = status.color,
+			string = state.vpn_connected and "󰦝" or "󰌾",
+			color = color,
 		},
 		label = {
-			string = status.label,
-			color = status.color,
+			string = state.vpn_connected and "VPN On" or "VPN Off",
+			color = color,
 		},
 	})
 end

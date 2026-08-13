@@ -154,11 +154,6 @@ local function configure_source_actions()
 	easybar.inbox.configure(SOURCE, { order = DEMO_ORDER, actions = actions })
 end
 
---- Publishes a fresh demo snapshot without affecting real inbox sources.
-local function publish_demo()
-	easybar.inbox.replace(SOURCE, make_demo_items())
-end
-
 configure_source_actions()
 
 easybar.inbox.on_context_action(SOURCE, function(event)
@@ -168,7 +163,7 @@ easybar.inbox.on_context_action(SOURCE, function(event)
 		easybar.after(DEMO_DELAY_SECONDS, function()
 			source_busy = false
 			configure_source_actions()
-			publish_demo()
+			easybar.inbox.replace(SOURCE, make_demo_items())
 		end)
 	elseif event.action_id == "clear" then
 		easybar.inbox.clear(SOURCE)

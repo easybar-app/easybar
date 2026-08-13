@@ -38,16 +38,6 @@ local function apply_event(event)
 	state.interface_name = normalize_interface_name(event.network.interface_name)
 end
 
---- Returns the current interface label or the offline fallback.
----@return string label
-local function label_text()
-	if state.interface_name ~= nil then
-		return state.interface_name
-	end
-
-	return "offline"
-end
-
 --- Updates the network widget from the latest normalized state.
 local function render()
 	local connected = state.interface_name ~= nil
@@ -59,7 +49,7 @@ local function render()
 			color = connected and COLORS.accent or COLORS.muted,
 		},
 		label = {
-			string = label_text(),
+			string = state.interface_name or "offline",
 			color = color,
 		},
 	})
