@@ -124,8 +124,12 @@ final class BarWindowController: NSWindowController, EasyBarSurfaceController {
     for screen: NSScreen,
     style: EasyBarPresentationModel.BarStyle
   ) -> NSRect {
-    let baseFrame = style.extendBehindNotch ? screen.frame : screen.visibleFrame
+    let topEdge = style.extendBehindNotch ? screen.frame.maxY : screen.visibleFrame.maxY
 
-    return BarFrameLayout.frame(in: baseFrame, height: style.height)
+    return BarFrameLayout.frame(
+      in: screen.frame,
+      topEdge: topEdge,
+      height: style.height
+    )
   }
 }

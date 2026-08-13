@@ -2,12 +2,12 @@ import AppKit
 
 /// Computes the custom bar frame independently from AppKit window creation.
 enum BarFrameLayout {
-  /// Returns a full-width rectangle anchored to the top of the supplied screen area.
-  static func frame(in baseFrame: NSRect, height: CGFloat) -> NSRect {
+  /// Returns a full-screen-width rectangle anchored to the supplied top edge.
+  static func frame(in screenFrame: NSRect, topEdge: CGFloat, height: CGFloat) -> NSRect {
     NSRect(
-      x: baseFrame.minX,
-      y: baseFrame.maxY - height,
-      width: baseFrame.width,
+      x: screenFrame.minX,
+      y: topEdge - height,
+      width: screenFrame.width,
       height: height
     )
   }
