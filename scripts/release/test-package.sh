@@ -93,7 +93,7 @@ cmp -s "$main_archive" "$tmp_dir/main.expected"
 cmp -s "$calendar_archive" "$tmp_dir/calendar.expected"
 cmp -s "$network_archive" "$tmp_dir/network.expected"
 
-leftovers="$(find "$dist_dir" -maxdepth 1 -name '.easybar-package.*' -print)"
+leftovers="$(find "$dist_dir" -name '.easybar-package.*' -print)"
 if [ -n "$leftovers" ]; then
   echo "Failed package creation left staging directories:" >&2
   printf '%s\n' "$leftovers" >&2
