@@ -33,3 +33,11 @@ if archive_contains_exact_entry "${archive}" "EasyBarCalendarAgent.app/Contents/
   echo "Unexpected unwrapped archive entry was found." >&2
   exit 1
 fi
+
+actual_roots="$(archive_top_level_entries "${archive}")"
+expected_roots=$'EasyBarCalendarAgent-9.8.7\ntrailing'
+if [ "${actual_roots}" != "${expected_roots}" ]; then
+  echo "Unexpected archive roots:" >&2
+  printf '%s\n' "${actual_roots}" >&2
+  exit 1
+fi

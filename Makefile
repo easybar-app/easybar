@@ -55,6 +55,7 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-derive-release-vars.sh
 	@scripts/release/test-homebrew-cask-update.sh
+	@scripts/release/test-package.sh
 
 check: test lint check-scripts ## Run the complete repository verification suite.
 
@@ -71,12 +72,17 @@ package: bundle ## Create EasyBar and helper-agent release ZIPs.
 	@scripts/release/package.sh --version "$(VERSION)" --dist-dir "$(DIST_DIR)"
 
 verify: ## Verify the built app, helper bundles, resources, versions, and architectures.
-	@scripts/build/verify-bundle.sh --arch "$(ARCH)" --version "$(VERSION)" --dist-dir "$(DIST_DIR)"
+	@scripts/build/verify-bundle.sh \
+		--arch "$(ARCH)" \
+		--version "$(VERSION)" \
+		--bundle-id "$(BUNDLE_ID)" \
+		--dist-dir "$(DIST_DIR)"
 
 verify-release: package ## Build and verify all release ZIPs.
 	@scripts/release/verify-release.sh \
 		--version "$(VERSION)" \
 		--arch "$(ARCH)" \
+		--bundle-id "$(BUNDLE_ID)" \
 		--dist-dir "$(DIST_DIR)"
 
 release: verify-release ## Build and verify release artifacts.

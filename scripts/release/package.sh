@@ -12,6 +12,8 @@ Options:
 EOF_USAGE
 }
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+project_root="$(cd -- "$script_dir/../.." && pwd -P)"
 version="${VERSION:-dev}"
 dist_dir="${DIST_DIR:-dist}"
 
@@ -37,9 +39,21 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-package_stage="$dist_dir/package"
-calendar_agent_stage="$dist_dir/package-calendar-agent"
-network_agent_stage="$dist_dir/package-network-agent"
+if [[ ! "$version" =~ ^[0-9A-Za-z][0-9A-Za-z.-]*$ ]]; then
+  echo "Version contains characters that are unsafe in package filenames: $version" >&2
+  exit 2
+fi
+
+case "$dist_dir" in
+/*) ;;
+*) dist_dir="$project_root/$dist_dir" ;;
+esac
+if [ ! -d "$dist_dir" ]; then
+  echo "Missing distribution directory: $dist_dir" >&2
+  exit 1
+fi
+dist_dir="$(cd -- "$dist_dir" && pwd -P)"
+
 package_zip="$dist_dir/EasyBar-$version.zip"
 calendar_agent_zip="$dist_dir/EasyBarCalendarAgent-$version.zip"
 network_agent_zip="$dist_dir/EasyBarNetworkAgent-$version.zip"
@@ -58,53 +72,58 @@ require_path() {
   fi
 }
 
+require_command() {
+  local command_name="$1"
+
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Required command not found: $command_name" >&2
+    exit 1
+  fi
+}
+
+require_command cp
+require_command mktemp
+require_command zip
 require_path "$app_bundle" "app bundle"
 require_path "$calendar_agent_bundle" "calendar agent bundle"
 require_path "$network_agent_bundle" "network agent bundle"
 require_path "$cli_bin" "CLI binary"
 
-package_dir=$(dirname "$package_zip")
-package_name=$(basename "$package_zip")
-mkdir -p "$package_dir"
-package_zip="$(cd "$package_dir" && pwd)/${package_name}"
+stage_root="$(mktemp -d "${TMPDIR:-/tmp}/easybar-package.XXXXXX")"
+cleanup() {
+  rm -rf "$stage_root"
+}
+trap cleanup EXIT
 
-rm -rf \
-  "$package_stage" \
-  "$calendar_agent_stage" \
-  "$network_agent_stage" \
-  "$package_zip" \
-  "$calendar_agent_zip" \
-  "$network_agent_zip"
-mkdir -p "$package_stage"
-
-cp -R "$app_bundle" "$package_stage/EasyBar.app"
-cp "$cli_bin" "$package_stage/easybar"
+rm -f "$package_zip" "$calendar_agent_zip" "$network_agent_zip"
 
 (
-  cd "$package_stage"
-  zip -qry "$package_zip" \
-    "EasyBar.app" \
-    "easybar"
+  cd "$dist_dir"
+  zip -qry -y "$package_zip" EasyBar.app easybar
 )
 
-calendar_agent_zip="$(cd "$(dirname "$calendar_agent_zip")" && pwd)/$(basename "$calendar_agent_zip")"
-network_agent_zip="$(cd "$(dirname "$network_agent_zip")" && pwd)/$(basename "$network_agent_zip")"
-calendar_agent_wrapper="EasyBarCalendarAgent-$version"
-network_agent_wrapper="EasyBarNetworkAgent-$version"
-mkdir -p "$calendar_agent_stage/$calendar_agent_wrapper"
-mkdir -p "$network_agent_stage/$network_agent_wrapper"
-cp -R "$calendar_agent_bundle" "$calendar_agent_stage/$calendar_agent_wrapper/EasyBarCalendarAgent.app"
-cp -R "$network_agent_bundle" "$network_agent_stage/$network_agent_wrapper/EasyBarNetworkAgent.app"
-(
-  cd "$calendar_agent_stage"
-  zip -qry "$calendar_agent_zip" "$calendar_agent_wrapper"
-)
-(
-  cd "$network_agent_stage"
-  zip -qry "$network_agent_zip" "$network_agent_wrapper"
-)
+package_agent() {
+  local app_bundle="$1"
+  local app_name="$2"
+  local archive="$3"
+  local wrapper="${app_name}-$version"
+  local stage="$stage_root/$app_name"
 
-rm -rf "$package_stage" "$calendar_agent_stage" "$network_agent_stage"
-echo "Created $package_zip"
-echo "Created $calendar_agent_zip"
-echo "Created $network_agent_zip"
+  mkdir -p "$stage/$wrapper"
+  cp -R "$app_bundle" "$stage/$wrapper/$app_name.app"
+  (
+    cd "$stage"
+    zip -qry -y "$archive" "$wrapper"
+  )
+}
+
+package_agent "$calendar_agent_bundle" EasyBarCalendarAgent "$calendar_agent_zip"
+package_agent "$network_agent_bundle" EasyBarNetworkAgent "$network_agent_zip"
+
+for archive in "$package_zip" "$calendar_agent_zip" "$network_agent_zip"; do
+  if [ ! -s "$archive" ]; then
+    echo "Package archive is empty: $archive" >&2
+    exit 1
+  fi
+  echo "Created $archive"
+done
