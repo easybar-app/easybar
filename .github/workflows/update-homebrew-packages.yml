@@ -1,4 +1,4 @@
-name: update-homebrew-cask
+name: Update Homebrew packages
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  update-cask:
+  update-packages:
     runs-on: ubuntu-latest
 
     steps:

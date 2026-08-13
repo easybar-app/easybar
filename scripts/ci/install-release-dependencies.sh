@@ -1,22 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() {
-  echo "Usage: $0 <release>" >&2
-}
-
-mode="${1:-}"
-case "$mode" in
-release) ;;
--h | --help)
-  usage
-  exit 0
-  ;;
-*)
-  usage
+if [ "$#" -ne 0 ]; then
+  echo "Usage: scripts/ci/install-release-dependencies.sh" >&2
   exit 2
-  ;;
-esac
+fi
 
 if ! command -v brew >/dev/null 2>&1; then
   echo "Homebrew is required to install release build dependencies." >&2

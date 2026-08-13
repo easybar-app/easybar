@@ -48,7 +48,7 @@ jobs:
 
       - name: Install release dependencies
         shell: bash
-        run: scripts/ci/install-dependencies.sh release
+        run: scripts/ci/install-release-dependencies.sh
 
       - name: Derive version from tag
         id: version
@@ -103,10 +103,10 @@ jobs:
             gh release create "${TAG}" "${ASSETS[@]}" --verify-tag --generate-notes
           fi
 
-      - name: Trigger Homebrew cask update
+      - name: Trigger Homebrew package update
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh workflow run update-homebrew-cask.yml \
+          gh workflow run update-homebrew-packages.yml \
             -f tag="${{ steps.version.outputs.tag }}"
