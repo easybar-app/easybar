@@ -6,7 +6,7 @@ archive_contains_exact_entry() {
   local expected_entry="$2"
 
   # Consume the complete listing: grep -q can give unzip SIGPIPE under pipefail.
-  unzip -Z1 "$archive" | grep -Fx "$expected_entry" >/dev/null
+  unzip -Z1 "$archive" | grep -Fx -- "$expected_entry" >/dev/null
 }
 
 # Prints the sorted unique top-level paths contained in a ZIP archive.
