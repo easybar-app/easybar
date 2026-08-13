@@ -48,7 +48,7 @@ build: ## Build the customizable EasyBar frontend.
 	@$(SWIFT) build
 
 test: ## Run EasyBar frontend unit tests.
-	@$(SWIFT) test --disable-sandbox
+	@$(SWIFT) test
 
 check-release-scripts: ## Test release archives, Homebrew cask, and agent formula generation.
 	@scripts/release/test-archive-utils.sh
@@ -93,9 +93,8 @@ support: ## Build and expose EasyBarKit's Lua runtime helper for direct source-t
 	@$(SWIFT) build --package-path "$(EASYBAR_KIT_ROOT)" --product EasyBarLuaRuntime
 	@kit_bin="$$($(SWIFT) build --package-path "$(EASYBAR_KIT_ROOT)" --show-bin-path)"; \
 		app_bin="$$($(SWIFT) build --show-bin-path)"; \
-		mkdir -p "$$app_bin" .build/debug; \
-		ln -sf "$$kit_bin/EasyBarLuaRuntime" "$$app_bin/EasyBarLuaRuntime"; \
-		ln -sf "$$kit_bin/EasyBarLuaRuntime" .build/debug/EasyBarLuaRuntime
+		mkdir -p "$$app_bin"; \
+		ln -sf "$$kit_bin/EasyBarLuaRuntime" "$$app_bin/EasyBarLuaRuntime"
 
 run: support ## Run EasyBar directly from the source checkout.
 	@$(SWIFT) run EasyBar
@@ -103,7 +102,8 @@ run: support ## Run EasyBar directly from the source checkout.
 bundle-local: ## Build a complete local EasyBar.app using the sibling EasyBarKit checkout.
 	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)")"; \
 		echo "Building local EasyBar version $$local_version"; \
-		scripts/build/local-bundle.sh \
+		scripts/build/bundle.sh \
+			--kit-root "$(EASYBAR_KIT_ROOT)" \
 			--arch "$(LOCAL_INSTALL_ARCH)" \
 			--version "$$local_version" \
 			--bundle-id "$(BUNDLE_ID)" \
@@ -163,7 +163,6 @@ clean-dist: ## Remove distribution output.
 	@rm -rf "$(DIST_DIR)"
 
 clean: clean-dist ## Remove SwiftPM and distribution output.
-	@$(SWIFT) package clean
 	@rm -rf .build
 
 ##@ Tagging
