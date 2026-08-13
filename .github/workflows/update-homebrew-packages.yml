@@ -20,10 +20,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout EasyBar
+      - name: Validate release tag input
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ ! "${INPUT_TAG}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo "::error::Invalid release tag: ${INPUT_TAG}" >&2
+            exit 1
+          fi
+
+      - name: Checkout EasyBar release tag
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag }}
+          ref: refs/tags/${{ inputs.tag }}
 
       - name: Derive asset URLs
         id: vars
