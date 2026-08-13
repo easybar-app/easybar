@@ -102,7 +102,7 @@ restore_homebrew_service_state() {
   fi
   if [ -z "$brew_command" ]; then
     echo "Cannot restore Homebrew service state without brew: $formula" >&2
-    return
+    return 1
   fi
   if ! "$brew_command" list --formula "$formula" >/dev/null 2>&1; then
     echo "Homebrew formula is no longer installed; skipping state restore: $formula" >&2
@@ -168,9 +168,20 @@ network_plist="${launch_agent_dir%/}/${network_label}.plist"
 service_state_file="${state_dir%/}/homebrew-services.state"
 brew_calendar_previous_state=""
 brew_network_previous_state=""
+brew_command="$(command -v brew || true)"
 
 if [ -f "$service_state_file" ]; then
   load_homebrew_state
+fi
+
+if { [ "$brew_calendar_previous_state" != not-installed ] && \
+  [ -n "$brew_calendar_previous_state" ]; } || \
+  { [ "$brew_network_previous_state" != not-installed ] && \
+    [ -n "$brew_network_previous_state" ]; }; then
+  if [ -z "$brew_command" ]; then
+    echo "Cannot restore recorded Homebrew service states because brew is unavailable" >&2
+    exit 1
+  fi
 fi
 
 launchctl bootout "$user_domain/$calendar_label" >/dev/null 2>&1 || true
@@ -184,7 +195,6 @@ remove_path "$calendar_agent_destination"
 remove_path "$network_agent_destination"
 remove_path "$cli_destination"
 
-brew_command="$(command -v brew || true)"
 restore_homebrew_service_state easybar-calendar-agent "$brew_calendar_previous_state"
 restore_homebrew_service_state easybar-network-agent "$brew_network_previous_state"
 remove_path "$service_state_file"

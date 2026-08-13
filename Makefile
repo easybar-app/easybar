@@ -53,6 +53,7 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/build/test-stamp.py
 	@scripts/dev/test-install-local.sh
 	@scripts/dev/test-local-version.sh
+	@scripts/dev/test-uninstall-local.sh
 	@scripts/release/test-archive-utils.sh
 	@scripts/release/test-derive-release-vars.sh
 	@scripts/release/test-homebrew-packages.sh
