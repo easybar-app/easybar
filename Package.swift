@@ -1,10 +1,9 @@
 // swift-tools-version: 6.2
 
-import Foundation
 import PackageDescription
 
 let easyBarKitDependency: Package.Dependency
-if let root = ProcessInfo.processInfo.environment["EASYBAR_KIT_ROOT"], !root.isEmpty {
+if let root = Context.environment["EASYBAR_KIT_ROOT"], !root.isEmpty {
   easyBarKitDependency = .package(name: "easybar-kit", path: root)
 } else {
   easyBarKitDependency = .package(
