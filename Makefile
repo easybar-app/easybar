@@ -98,14 +98,16 @@ update: ## Update Swift package dependencies.
 
 support: ## Build and expose EasyBarKit's Lua runtime helper for direct source-tree runs.
 	@test -f "$(EASYBAR_KIT_ROOT)/Package.swift" || { echo "EasyBarKit checkout not found: $(EASYBAR_KIT_ROOT)" >&2; exit 1; }
-	@$(SWIFT) build --package-path "$(EASYBAR_KIT_ROOT)" --product EasyBarLuaRuntime
-	@kit_bin="$$($(SWIFT) build --package-path "$(EASYBAR_KIT_ROOT)" --show-bin-path)"; \
-		app_bin="$$($(SWIFT) build --show-bin-path)"; \
+	@kit_root="$$(cd -- "$(EASYBAR_KIT_ROOT)" && pwd -P)"; \
+		$(SWIFT) build --package-path "$$kit_root" --product EasyBarLuaRuntime; \
+		kit_bin="$$($(SWIFT) build --package-path "$$kit_root" --show-bin-path)"; \
+		app_bin="$$(EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) build --show-bin-path)"; \
 		mkdir -p "$$app_bin"; \
 		ln -sf "$$kit_bin/EasyBarLuaRuntime" "$$app_bin/EasyBarLuaRuntime"
 
 run: support ## Run EasyBar directly from the source checkout.
-	@$(SWIFT) run EasyBar
+	@kit_root="$$(cd -- "$(EASYBAR_KIT_ROOT)" && pwd -P)"; \
+		EASYBAR_KIT_ROOT="$$kit_root" $(SWIFT) run EasyBar
 
 bundle-local: ## Build a complete local EasyBar.app using the sibling EasyBarKit checkout.
 	@local_version="$$(scripts/dev/local-version.sh --version-prefix "$(VERSION_PREFIX)" --dependency-root "$(EASYBAR_KIT_ROOT)")"; \

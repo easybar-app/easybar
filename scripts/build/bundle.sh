@@ -17,7 +17,7 @@ EOF_USAGE
 }
 
 project_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
-kit_root=""
+kit_root="${EASYBAR_KIT_ROOT:-}"
 arch="${ARCH:-universal}"
 version="${VERSION:-dev}"
 bundle_id="${BUNDLE_ID:-io.github.gi8lino.easybar}"
@@ -156,7 +156,6 @@ esac
 resolve_easybar_kit_dependency_path() {
   (
     cd "$project_root"
-    swift package resolve >/dev/null
     swift package show-dependencies --format json
   ) | python3 -c 'import json, os, sys
 root = json.load(sys.stdin)
@@ -170,12 +169,11 @@ while stack:
 raise SystemExit("easybar-kit dependency not found")'
 }
 
-dependency_override_added=false
 build_version_file=""
 build_version_file_existed=false
 previous_build_version=""
 
-# Restores package-edit and EasyBarKit version-file state after bundling.
+# Restores the EasyBarKit version-file state after bundling.
 restore_build_state() {
   local status=$?
   trap - EXIT
@@ -188,33 +186,21 @@ restore_build_state() {
     fi
   fi
 
-  if [ "$dependency_override_added" = true ]; then
-    echo "Restoring EasyBar package dependency state"
-    if ! (cd "$project_root" && swift package unedit easybar-kit --force >/dev/null); then
-      echo "Failed to restore EasyBarKit dependency state" >&2
-      status=1
-    fi
-  fi
-
   exit "$status"
 }
 trap restore_build_state EXIT
 
-resolved_kit_root="$(resolve_easybar_kit_dependency_path)"
 if [ -n "$kit_root" ]; then
   if [ ! -f "$kit_root/Package.swift" ]; then
     echo "EasyBarKit checkout not found: $kit_root" >&2
     exit 1
   fi
   kit_root="$(cd -- "$kit_root" && pwd -P)"
-
-  if [ "$resolved_kit_root" != "$kit_root" ]; then
-    echo "Using local EasyBarKit checkout: $kit_root"
-    (cd "$project_root" && swift package edit easybar-kit --path "$kit_root")
-    dependency_override_added=true
-  fi
+  export EASYBAR_KIT_ROOT="$kit_root"
+  echo "Using local EasyBarKit checkout: $kit_root"
 else
-  kit_root="$resolved_kit_root"
+  unset EASYBAR_KIT_ROOT
+  kit_root="$(resolve_easybar_kit_dependency_path)"
 fi
 
 build_version_file="$kit_root/.build/easybar-build-version"
