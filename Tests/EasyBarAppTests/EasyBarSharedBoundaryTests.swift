@@ -1,8 +1,8 @@
 import EasyBarShared
 import XCTest
 
-/// Verifies that the shared presentation API remains consumable by the custom frontend.
-final class EasyBarKitBoundaryTests: XCTestCase {
+/// Verifies the shared widget-position contract consumed by the custom frontend.
+final class EasyBarSharedBoundaryTests: XCTestCase {
   func testWidgetPositionsRemainAvailableToFrontend() {
     XCTAssertEqual(
       WidgetPosition.allCases.map(\.rawValue),
