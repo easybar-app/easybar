@@ -52,19 +52,27 @@ if ! is_valid_release_version "$version"; then
 fi
 
 cd "$tap_dir"
-git add -A -- \
-  Casks/easybar.rb \
-  Formula/easybar-calendar-agent.rb \
+package_paths=(
+  Casks/easybar.rb
+  Formula/easybar-calendar-agent.rb
   Formula/easybar-network-agent.rb
+)
 
-if git diff --cached --quiet; then
-  echo "No changes to commit."
+if [ "$dry_run" = true ]; then
+  changes="$(git status --short -- "${package_paths[@]}")"
+  if [ -z "$changes" ]; then
+    echo "No changes to commit."
+    exit 0
+  fi
+
+  echo "Homebrew package changes are ready for EasyBar $version."
+  printf '%s\n' "$changes"
   exit 0
 fi
 
-if [ "$dry_run" = true ]; then
-  echo "Homebrew package changes are ready for EasyBar $version."
-  git diff --cached --stat
+git add -A -- "${package_paths[@]}"
+if git diff --cached --quiet; then
+  echo "No changes to commit."
   exit 0
 fi
 

@@ -93,8 +93,12 @@ ruby -c "${network_formula}" >/dev/null
   --version "${version}" \
   --dry-run >/dev/null
 
-if git -C "${tap_dir}" diff --cached --quiet; then
-  echo "Expected dry-run commit script to stage cask changes." >&2
+if ! git -C "${tap_dir}" diff --cached --quiet; then
+  echo "Dry-run commit script unexpectedly modified the Git index." >&2
+  exit 1
+fi
+if [ -z "$(git -C "${tap_dir}" status --short -- Casks Formula)" ]; then
+  echo "Expected generated Homebrew package changes after dry run." >&2
   exit 1
 fi
 if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
@@ -103,6 +107,7 @@ if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
 fi
 
 # The commit helper must also work on subsequent releases.
+git -C "${tap_dir}" add -A -- Casks Formula
 git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
   -c commit.gpgsign=false commit -qm "publish cask"
 "${repo_root}/scripts/release/update-homebrew-cask.sh" \
@@ -116,6 +121,11 @@ git -C "${tap_dir}" -c user.name=test -c user.email=test@example.com \
   --tap-dir "${tap_dir}" \
   --version "9.8.8" \
   --dry-run >/dev/null
+
+if ! git -C "${tap_dir}" diff --cached --quiet; then
+  echo "Subsequent dry run unexpectedly modified the Git index." >&2
+  exit 1
+fi
 
 if grep -Fq 'postflight do' "${easybar_cask}"; then
   echo "Legacy Homebrew flight block was generated." >&2
