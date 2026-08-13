@@ -65,6 +65,10 @@ for spec in "$@"; do
     echo "Icon input and output must be different paths: $svg" >&2
     exit 2
   fi
+  if [ -d "$icns" ]; then
+    echo "Icon output must not be a directory: $icns" >&2
+    exit 2
+  fi
 done
 
 require_command "$svg_convert" "Install librsvg or set SVG_CONVERT=/path/to/rsvg-convert."

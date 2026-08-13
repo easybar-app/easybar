@@ -3,6 +3,8 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 script="$script_dir/app_icons.sh"
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
 
 assert_rejected() {
   local expected="$1"
@@ -24,3 +26,5 @@ assert_rejected "paths must not be empty" :EasyBar.icns
 assert_rejected "paths must not be empty" icon.svg:
 assert_rejected ".icns extension" icon.svg:EasyBar.png
 assert_rejected "must be different paths" EasyBar.icns:EasyBar.icns
+mkdir "$tmp_dir/EasyBar.icns"
+assert_rejected "must not be a directory" "icon.svg:$tmp_dir/EasyBar.icns"
