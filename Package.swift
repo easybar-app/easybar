@@ -8,7 +8,7 @@ if let root = Context.environment["EASYBAR_KIT_ROOT"], !root.isEmpty {
 } else {
   easyBarKitDependency = .package(
     url: "https://github.com/easybar-app/easybar-kit",
-    from: "0.2.5"
+    from: "0.3.0"
   )
 }
 
