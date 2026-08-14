@@ -64,8 +64,8 @@ assert_contains "${easybar_cask}" 'cask "easybar" do'
 assert_contains "${easybar_cask}" "url \"https://github.com/easybar-app/easybar/releases/download/${tag}/EasyBar-${version}.zip\""
 assert_contains "${easybar_cask}" "sha256 \"${sha}\""
 assert_contains "${easybar_cask}" "version \"${version}\""
-assert_contains "${easybar_cask}" '"easybar-calendar-agent",'
-assert_contains "${easybar_cask}" '"easybar-network-agent",'
+assert_contains "${easybar_cask}" '"easybar-app/tap/easybar-calendar-agent",'
+assert_contains "${easybar_cask}" '"easybar-app/tap/easybar-network-agent",'
 assert_contains "${easybar_cask}" 'depends_on macos: :sonoma'
 assert_contains "${easybar_cask}" 'postflight_steps do'
 assert_contains "${easybar_cask}" 'run "/usr/bin/xattr",'
@@ -73,13 +73,20 @@ assert_contains "${easybar_cask}" 'args: ["-d", "com.apple.quarantine", "{{stage
 assert_contains "${easybar_cask}" 'args: ["-dr", "com.apple.quarantine", "{{appdir}}/EasyBar.app"]'
 assert_contains "${easybar_cask}" 'must_succeed: false'
 assert_contains "${easybar_cask}" 'run "{{HOMEBREW_BREW_FILE}}",'
-assert_contains "${easybar_cask}" '"services", "restart", "easybar-calendar-agent"'
-assert_contains "${easybar_cask}" '"services", "restart", "easybar-network-agent"'
-assert_contains "${easybar_cask}" '"services", "stop", "easybar-calendar-agent"'
-assert_contains "${easybar_cask}" '"services", "stop", "easybar-network-agent"'
+assert_contains "${easybar_cask}" '"services", "restart", "easybar-app/tap/easybar-calendar-agent"'
+assert_contains "${easybar_cask}" '"services", "restart", "easybar-app/tap/easybar-network-agent"'
+assert_contains "${easybar_cask}" '"services", "stop", "easybar-app/tap/easybar-calendar-agent"'
+assert_contains "${easybar_cask}" '"services", "stop", "easybar-app/tap/easybar-network-agent"'
 assert_contains "${easybar_cask}" 'uninstall_preflight_steps do'
 assert_contains "${easybar_cask}" 'app "EasyBar.app"'
 assert_contains "${easybar_cask}" 'binary "easybar"'
+
+if grep -Fq '"easybar-calendar-agent"' "${easybar_cask}" || \
+  grep -Fq '"easybar-network-agent"' "${easybar_cask}"; then
+  echo "Generated cask contains an unqualified EasyBar helper formula name." >&2
+  cat "${easybar_cask}" >&2
+  exit 1
+fi
 
 calendar_formula="${tap_dir}/Formula/easybar-calendar-agent.rb"
 network_formula="${tap_dir}/Formula/easybar-network-agent.rb"
@@ -195,3 +202,5 @@ if "${repo_root}/scripts/release/update-homebrew-packages.sh" \
   echo "Expected invalid repository metadata to fail." >&2
   exit 1
 fi
+
+

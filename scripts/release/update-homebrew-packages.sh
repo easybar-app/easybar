@@ -93,6 +93,9 @@ easybar_cask_file="$cask_dir/easybar.rb"
 calendar_agent_formula_file="$formula_dir/easybar-calendar-agent.rb"
 network_agent_formula_file="$formula_dir/easybar-network-agent.rb"
 asset_url="https://github.com/${repository}/releases/download/${tag}/EasyBar-${version}.zip"
+homebrew_tap="easybar-app/tap"
+calendar_agent_formula="${homebrew_tap}/easybar-calendar-agent"
+network_agent_formula="${homebrew_tap}/easybar-network-agent"
 
 mkdir -p "$cask_dir" "$formula_dir"
 
@@ -118,8 +121,8 @@ cask "easybar" do
   homepage "https://easybar.dev/"
 
   depends_on formula: [
-    "easybar-calendar-agent",
-    "easybar-network-agent",
+    "${calendar_agent_formula}",
+    "${network_agent_formula}",
     "lua",
   ]
   depends_on macos: :sonoma
@@ -135,16 +138,16 @@ cask "easybar" do
         args: ["-dr", "com.apple.quarantine", "{{appdir}}/EasyBar.app"],
         must_succeed: false
     run "{{HOMEBREW_BREW_FILE}}",
-        args: ["services", "restart", "easybar-calendar-agent"]
+        args: ["services", "restart", "${calendar_agent_formula}"]
     run "{{HOMEBREW_BREW_FILE}}",
-        args: ["services", "restart", "easybar-network-agent"]
+        args: ["services", "restart", "${network_agent_formula}"]
   end
 
   uninstall_preflight_steps do
     run "{{HOMEBREW_BREW_FILE}}",
-        args: ["services", "stop", "easybar-calendar-agent"]
+        args: ["services", "stop", "${calendar_agent_formula}"]
     run "{{HOMEBREW_BREW_FILE}}",
-        args: ["services", "stop", "easybar-network-agent"]
+        args: ["services", "stop", "${network_agent_formula}"]
   end
 
   zap trash: [
@@ -218,3 +221,5 @@ ruby -c "$network_agent_formula_temp" >/dev/null
 mv -f "$easybar_cask_temp" "$easybar_cask_file"
 mv -f "$calendar_agent_formula_temp" "$calendar_agent_formula_file"
 mv -f "$network_agent_formula_temp" "$network_agent_formula_file"
+
+
