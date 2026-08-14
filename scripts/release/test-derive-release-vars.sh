@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 tmp_dir="$(mktemp -d)"
@@ -30,7 +32,6 @@ if "$repo_root/scripts/release/derive-release-vars.sh" \
   echo "The removed --version compatibility option was unexpectedly accepted" >&2
   exit 1
 fi
-
 
 if "$repo_root/scripts/release/derive-release-vars.sh" \
   --tag v1.2.3 \

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 # Returns success for release versions accepted by EasyBar tags and package publishing.
 is_valid_release_version() {

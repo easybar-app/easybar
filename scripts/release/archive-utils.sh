@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 # Returns success when a ZIP archive contains an entry with the exact requested path.
 archive_contains_exact_entry() {
@@ -15,5 +18,5 @@ archive_top_level_entries() {
 
   unzip -Z1 "$archive" |
     awk -F/ 'NF > 0 && $1 != "" { print $1 }' |
-    sort -u
+    LC_ALL=C sort -u
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 usage() {
   echo "Usage: $0 --tap-dir DIR --version VERSION --sha SHA --calendar-agent-sha SHA --network-agent-sha SHA [--repository OWNER/REPO]" >&2
@@ -53,7 +55,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ -z "$tap_dir" ] || [ -z "$version" ] || [ -z "$sha" ] || \
+if [ -z "$tap_dir" ] || [ -z "$version" ] || [ -z "$sha" ] ||
   [ -z "$calendar_agent_sha" ] || [ -z "$network_agent_sha" ]; then
   usage
   exit 2
