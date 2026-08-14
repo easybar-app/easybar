@@ -72,14 +72,18 @@ assert_contains "${easybar_cask}" 'run "/usr/bin/xattr",'
 assert_contains "${easybar_cask}" 'args: ["-d", "com.apple.quarantine", "{{staged_path}}/easybar"]'
 assert_contains "${easybar_cask}" 'args: ["-dr", "com.apple.quarantine", "{{appdir}}/EasyBar.app"]'
 assert_contains "${easybar_cask}" 'must_succeed: false'
-assert_contains "${easybar_cask}" 'run "{{HOMEBREW_BREW_FILE}}",'
-assert_contains "${easybar_cask}" '"services", "restart", "easybar-app/tap/easybar-calendar-agent"'
-assert_contains "${easybar_cask}" '"services", "restart", "easybar-app/tap/easybar-network-agent"'
-assert_contains "${easybar_cask}" '"services", "stop", "easybar-app/tap/easybar-calendar-agent"'
-assert_contains "${easybar_cask}" '"services", "stop", "easybar-app/tap/easybar-network-agent"'
-assert_contains "${easybar_cask}" 'uninstall_preflight_steps do'
 assert_contains "${easybar_cask}" 'app "EasyBar.app"'
 assert_contains "${easybar_cask}" 'binary "easybar"'
+assert_contains "${easybar_cask}" 'caveats <<~EOS'
+assert_contains "${easybar_cask}" 'brew services restart easybar-app/tap/easybar-calendar-agent'
+assert_contains "${easybar_cask}" 'brew services restart easybar-app/tap/easybar-network-agent'
+
+if grep -Fq '{{HOMEBREW_BREW_FILE}}' "${easybar_cask}" || \
+  grep -Fq 'uninstall_preflight_steps do' "${easybar_cask}"; then
+  echo "Generated cask must not manage Homebrew services from cask flight steps." >&2
+  cat "${easybar_cask}" >&2
+  exit 1
+fi
 
 if grep -Fq '"easybar-calendar-agent"' "${easybar_cask}" || \
   grep -Fq '"easybar-network-agent"' "${easybar_cask}"; then
