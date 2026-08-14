@@ -14,7 +14,8 @@ LUA_API_HEADER_PATTERN = re.compile(
     r"^-- EasyBar Lua API stub version: .*$", re.MULTILINE
 )
 LUA_API_DOC_PATTERN = re.compile(
-    r"EasyBar application version \(`[^`]*`\)"
+    r"^---@field version string EasyBar application version \(`[^`]*`\)\.$",
+    re.MULTILINE,
 )
 LUA_API_VALUE_PATTERN = re.compile(
     r'^EasyBar\.version = "[^"]*"$', re.MULTILINE
@@ -90,7 +91,8 @@ def stamp_lua_api(path: Path, version: str) -> int:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as error:
-        print(f"Could not read staged Lua API stub {path}: {error}", file=sys.stderr)
+        print(
+            f"Could not read staged Lua API stub {path}: {error}", file=sys.stderr)
         return 1
 
     text, ok = replace_required(
@@ -105,8 +107,9 @@ def stamp_lua_api(path: Path, version: str) -> int:
     text, ok = replace_required(
         text,
         LUA_API_DOC_PATTERN,
-        f"EasyBar application version (`{version}`)",
+        f"---@field version string EasyBar application version (`{version}`).",
         f"Lua API version documentation in {path}",
+        expected_count=1,
     )
     if not ok:
         return 1
@@ -123,7 +126,8 @@ def stamp_lua_api(path: Path, version: str) -> int:
     try:
         path.write_text(text, encoding="utf-8")
     except OSError as error:
-        print(f"Could not write staged Lua API stub {path}: {error}", file=sys.stderr)
+        print(
+            f"Could not write staged Lua API stub {path}: {error}", file=sys.stderr)
         return 1
 
     return 0
@@ -170,7 +174,8 @@ def stamp_plist(
 
     try:
         with plist.open("wb") as handle:
-            plistlib.dump(values, handle, fmt=plistlib.FMT_XML, sort_keys=False)
+            plistlib.dump(values, handle, fmt=plistlib.FMT_XML,
+                          sort_keys=False)
     except OSError as error:
         print(f"Could not write Info.plist {plist}: {error}", file=sys.stderr)
         return 1
