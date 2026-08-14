@@ -97,8 +97,9 @@ assert_archive_roots() {
   local expected
   local actual
 
-  expected="$(printf '%s\n' "$@" | sort -u)"
+  expected="$(printf '%s\n' "$@" | LC_ALL=C sort -u)"
   actual="$(archive_top_level_entries "$archive")"
+
   if [ "$actual" != "$expected" ]; then
     echo "Unexpected top-level paths in $archive" >&2
     echo "Expected:" >&2
