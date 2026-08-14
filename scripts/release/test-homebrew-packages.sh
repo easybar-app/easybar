@@ -44,6 +44,18 @@ assert_contains() {
   fi
 }
 
+assert_no_local_git_identity() {
+  if git -C "${tap_dir}" config --local --get user.name >/dev/null 2>&1; then
+    echo "Homebrew commit helper unexpectedly changed the tap's local Git user.name." >&2
+    exit 1
+  fi
+
+  if git -C "${tap_dir}" config --local --get user.email >/dev/null 2>&1; then
+    echo "Homebrew commit helper unexpectedly changed the tap's local Git user.email." >&2
+    exit 1
+  fi
+}
+
 easybar_cask="${tap_dir}/Casks/easybar.rb"
 test -s "${easybar_cask}"
 assert_contains "${easybar_cask}" 'cask "easybar" do'
@@ -66,7 +78,6 @@ assert_contains "${easybar_cask}" '"services", "stop", "easybar-network-agent"'
 assert_contains "${easybar_cask}" 'uninstall_preflight_steps do'
 assert_contains "${easybar_cask}" 'app "EasyBar.app"'
 assert_contains "${easybar_cask}" 'binary "easybar"'
-
 
 calendar_formula="${tap_dir}/Formula/easybar-calendar-agent.rb"
 network_formula="${tap_dir}/Formula/easybar-network-agent.rb"
@@ -109,10 +120,7 @@ if [ -z "$(git -C "${tap_dir}" status --short -- Casks Formula)" ]; then
   echo "Expected generated Homebrew package changes after dry run." >&2
   exit 1
 fi
-if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
-  echo "Dry-run unexpectedly changed the tap's Git identity." >&2
-  exit 1
-fi
+assert_no_local_git_identity
 
 # Automated commits must include only generated package files.
 printf '%s\n' unrelated >"${tap_dir}/unrelated.txt"
@@ -145,10 +153,8 @@ if [ "$(git -C "${tap_dir}" diff --cached --name-only)" != unrelated.txt ]; then
   echo "No-change commit check altered an unrelated staged change." >&2
   exit 1
 fi
-if git -C "${tap_dir}" config --get user.name >/dev/null 2>&1; then
-  echo "Automated commit unexpectedly changed the tap's Git identity." >&2
-  exit 1
-fi
+assert_no_local_git_identity
+
 git -C "${tap_dir}" reset -q HEAD -- unrelated.txt
 rm "${tap_dir}/unrelated.txt"
 
@@ -169,6 +175,8 @@ if ! git -C "${tap_dir}" diff --cached --quiet; then
   echo "Subsequent dry run unexpectedly modified the Git index." >&2
   exit 1
 fi
+
+assert_no_local_git_identity
 
 if grep -Fq 'postflight do' "${easybar_cask}"; then
   echo "Legacy Homebrew flight block was generated." >&2
