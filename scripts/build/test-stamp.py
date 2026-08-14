@@ -55,7 +55,7 @@ class StampTests(unittest.TestCase):
                 "\n".join(
                     [
                         "-- EasyBar Lua API stub version: dev",
-                        "--- EasyBar application version (`dev`)",
+                        "---@field version string EasyBar application version (`dev`).",
                         'EasyBar.version = "dev"',
                         "",
                     ]
@@ -69,7 +69,7 @@ class StampTests(unittest.TestCase):
                 "\n".join(
                     [
                         "-- EasyBar Lua API stub version: 1.2.3-beta.1",
-                        "--- EasyBar application version (`1.2.3-beta.1`)",
+                        "---@field version string EasyBar application version (`1.2.3-beta.1`).",
                         'EasyBar.version = "1.2.3-beta.1"',
                         "",
                     ]
@@ -82,7 +82,7 @@ class StampTests(unittest.TestCase):
             original = "\n".join(
                 [
                     "-- EasyBar Lua API stub version: dev",
-                    "--- EasyBar application version (`dev`)",
+                    "---@field version string EasyBar application version (`dev`).",
                     'EasyBar.version = "dev"',
                     "",
                 ]

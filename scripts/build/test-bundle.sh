@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 bundle_script="$repo_root/scripts/build/bundle.sh"
@@ -27,7 +29,7 @@ mkdir -p \
 printf 'runtime\n' >"$kit_root/Sources/EasyBarKit/Lua/runtime.lua"
 cat >"$kit_root/Sources/EasyBarKit/Lua/easybar_api.lua" <<'EOF_LUA_API'
 -- EasyBar Lua API stub version: dev
---- EasyBar application version (`dev`)
+---@field version string EasyBar application version (`dev`).
 EasyBar.version = "dev"
 EOF_LUA_API
 printf 'return {}\n' >"$kit_root/Sources/EasyBarKit/Lua/easybar/init.lua"

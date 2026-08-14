@@ -1,5 +1,7 @@
-#!/bin/sh
-set -eu
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
 usage() {
   echo "Usage: $0 SVG_CONVERT IMAGE_CONVERT DIST_DIR SVG:ICNS [SVG:ICNS ...]" >&2
