@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test local development version generation.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -16,6 +17,7 @@ mkdir -p \
 cp "$script_dir/local-version.sh" "$project_root/scripts/dev/"
 cp "$script_dir/../release/metadata.sh" "$project_root/scripts/release/"
 
+# Create a Git repository fixture.
 init_repository() {
   local root="$1"
   local fixture="$2"

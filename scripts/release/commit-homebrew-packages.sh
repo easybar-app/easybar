@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Commit updated Homebrew package definitions.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: $0 --tap-dir DIR --version VERSION [--dry-run]" >&2
 }

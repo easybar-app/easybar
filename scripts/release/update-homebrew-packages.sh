@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Update Homebrew package definitions for a release.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: $0 --tap-dir DIR --version VERSION --sha SHA --calendar-agent-sha SHA --network-agent-sha SHA [--repository OWNER/REPO]" >&2
 }
@@ -102,6 +104,7 @@ mkdir -p "$cask_dir" "$formula_dir"
 easybar_cask_temp="${easybar_cask_file}.tmp.$$"
 calendar_agent_formula_temp="${calendar_agent_formula_file}.tmp.$$"
 network_agent_formula_temp="${network_agent_formula_file}.tmp.$$"
+# Remove temporary files created by the script.
 cleanup() {
   rm -f \
     "$easybar_cask_temp" \
@@ -152,6 +155,7 @@ cask "easybar" do
 end
 EOF_CASK
 
+# Render a Homebrew formula for an agent package.
 write_agent_formula() {
   local file="$1"
   local class_name="$2"
@@ -216,5 +220,4 @@ ruby -c "$network_agent_formula_temp" >/dev/null
 mv -f "$easybar_cask_temp" "$easybar_cask_file"
 mv -f "$calendar_agent_formula_temp" "$calendar_agent_formula_file"
 mv -f "$network_agent_formula_temp" "$network_agent_formula_file"
-
 

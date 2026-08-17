@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Create deterministic release packages.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/release/package.sh [--version <version>] [--dist-dir <dir>]
@@ -40,6 +42,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Exit unless a required command is available.
 require_command() {
   local command_name="$1"
 
@@ -49,6 +52,7 @@ require_command() {
   fi
 }
 
+# Exit unless a required file exists.
 require_file() {
   local path="$1"
   local label="$2"
@@ -59,6 +63,7 @@ require_file() {
   fi
 }
 
+# Exit unless a required directory exists.
 require_directory() {
   local path="$1"
   local label="$2"
@@ -114,6 +119,7 @@ package_zip_stage="$stage_root/EasyBar-$version.zip"
 calendar_agent_zip_stage="$stage_root/EasyBarCalendarAgent-$version.zip"
 network_agent_zip_stage="$stage_root/EasyBarNetworkAgent-$version.zip"
 
+# Remove temporary files created by the script.
 cleanup() {
   rm -rf "$stage_root"
 }

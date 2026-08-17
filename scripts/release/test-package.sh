@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test deterministic release packaging.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -9,6 +10,7 @@ source "$repo_root/scripts/release/archive-utils.sh"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+# Assert that an archive has the expected top-level entries.
 assert_archive_roots() {
   local archive="$1"
   local expected="$2"

@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Derive a version for a local development build.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/dev/local-version.sh [--dependency-root DIR]
@@ -39,6 +41,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 project_root="$(cd -- "$script_dir/../.." && pwd -P)"
 source "$project_root/scripts/release/metadata.sh"
 
+# Exit unless the path is a Git worktree.
 require_git_worktree() {
   local root="$1"
   local label="$2"
@@ -49,10 +52,12 @@ require_git_worktree() {
   fi
 }
 
+# Return the abbreviated worktree commit.
 short_commit() {
   git -C "$1" rev-parse --short=8 HEAD
 }
 
+# Return whether the worktree has uncommitted changes.
 is_dirty() {
   local root="$1"
 

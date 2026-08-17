@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test cleanup safeguards and behavior.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -7,6 +8,7 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+# Assert that invalid input is rejected.
 assert_rejected() {
   local dist_dir="$1"
   local expected="$2"

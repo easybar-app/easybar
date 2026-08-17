@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Install a local development build.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/dev/install-local.sh [options]
@@ -90,6 +92,7 @@ case "$dist_dir" in
 *) dist_dir="$project_root/$dist_dir" ;;
 esac
 
+# Exit unless a required command is available.
 require_command() {
   local command_name="$1"
 
@@ -99,6 +102,7 @@ require_command() {
   fi
 }
 
+# Exit unless a required directory exists.
 require_directory() {
   local path="$1"
   local label="$2"
@@ -109,6 +113,7 @@ require_directory() {
   fi
 }
 
+# Exit unless a required executable is available.
 require_executable() {
   local path="$1"
   local label="$2"
@@ -119,6 +124,7 @@ require_executable() {
   fi
 }
 
+# Read and validate an artifact version.
 read_artifact_version() {
   local executable="$1"
   local display_name="$2"
@@ -145,6 +151,7 @@ read_artifact_version() {
   printf '%s\n' "$output"
 }
 
+# Create a directory with the expected permissions.
 ensure_directory() {
   local directory="$1"
 
@@ -160,10 +167,12 @@ ensure_directory() {
   sudo mkdir -p "$directory"
 }
 
+# Return whether a path or symlink exists.
 path_exists() {
   [ -e "$1" ] || [ -L "$1" ]
 }
 
+# Remove an installed path when present.
 remove_installation_path() {
   local path="$1"
   local parent
@@ -182,6 +191,7 @@ remove_installation_path() {
   sudo rm -rf "$path"
 }
 
+# Move an installation path to a new location.
 move_installation_path() {
   local source="$1"
   local destination="$2"
@@ -197,6 +207,7 @@ move_installation_path() {
   sudo mv "$source" "$destination"
 }
 
+# Back up an existing installation path.
 backup_installation_path() {
   local source="$1"
   local backup="$2"
@@ -225,6 +236,7 @@ backup_installation_path() {
   fi
 }
 
+# Restore a backed-up installation path.
 restore_installation_path() {
   local destination="$1"
   local backup="$2"
@@ -235,6 +247,7 @@ restore_installation_path() {
   fi
 }
 
+# Replace the installed application bundle.
 replace_bundle() {
   local source="$1"
   local destination="$2"
@@ -265,6 +278,7 @@ replace_bundle() {
   fi
 }
 
+# Replace an installed command-line binary.
 replace_binary() {
   local source="$1"
   local destination="$2"
@@ -295,6 +309,7 @@ replace_binary() {
   fi
 }
 
+# Escape text for XML content.
 xml_escape() {
   local value="$1"
 
@@ -306,6 +321,7 @@ xml_escape() {
   printf '%s' "$value"
 }
 
+# Write the launch agent property list.
 write_launch_agent() {
   local plist="$1"
   local label="$2"
@@ -376,23 +392,27 @@ EOF_PLIST
   fi
 }
 
+# Return the launchd target for the local service.
 service_target() {
   local label="$1"
   printf 'gui/%s/%s' "$user_id" "$label"
 }
 
+# Return whether the local service is loaded.
 service_is_loaded() {
   local label="$1"
 
   launchctl print "$(service_target "$label")" >/dev/null 2>&1
 }
 
+# Unload the local service from launchd.
 bootout_service() {
   local label="$1"
 
   launchctl bootout "$(service_target "$label")" >/dev/null 2>&1 || true
 }
 
+# Load the local service into launchd.
 bootstrap_service() {
   local label="$1"
   local plist="$2"
@@ -404,6 +424,7 @@ bootstrap_service() {
   launchctl kickstart -k "$target"
 }
 
+# Read the current Homebrew formula state.
 homebrew_formula_state() {
   local formula="$1"
 
@@ -426,6 +447,7 @@ homebrew_formula_state() {
   fi
 }
 
+# Return whether stored Homebrew state is valid.
 is_valid_homebrew_state() {
   case "$1" in
   started | stopped | not-installed) return 0 ;;
@@ -433,6 +455,7 @@ is_valid_homebrew_state() {
   esac
 }
 
+# Load saved Homebrew service state.
 load_homebrew_state() {
   local key
   local value
@@ -454,6 +477,7 @@ load_homebrew_state() {
   fi
 }
 
+# Persist Homebrew service state.
 write_homebrew_state() {
   local stage="${service_state_file}.local-install.$$"
 
@@ -472,6 +496,7 @@ EOF_STATE
   fi
 }
 
+# Stop a Homebrew service before local installation.
 stop_homebrew_service_if_started() {
   local formula="$1"
   local state="$2"
@@ -539,6 +564,7 @@ cli_backup="${cli_destination}${backup_suffix}"
 calendar_plist_backup="${calendar_plist}${backup_suffix}"
 network_plist_backup="${network_plist}${backup_suffix}"
 
+# Back up all paths replaced by installation.
 backup_installation_paths() {
   backup_installation_path "$app_destination" "$app_backup"
   backup_installation_path "$calendar_agent_destination" "$calendar_agent_backup"
@@ -548,6 +574,7 @@ backup_installation_paths() {
   backup_installation_path "$network_plist" "$network_plist_backup"
 }
 
+# Restore all backed-up installation paths.
 restore_installation_paths() {
   local failed=false
 
@@ -561,6 +588,7 @@ restore_installation_paths() {
   [ "$failed" = false ]
 }
 
+# Remove installation backups after success.
 discard_installation_backups() {
   local failed=false
 
@@ -596,6 +624,7 @@ if service_is_loaded "$network_label"; then
   network_local_service_was_loaded=true
 fi
 
+# Restore service state after a failed installation.
 restore_service_after_failure() {
   local label="$1"
   local plist="$2"
@@ -627,6 +656,7 @@ restore_service_after_failure() {
   [ "$failed" = false ]
 }
 
+# Remove temporary files created by the script.
 cleanup() {
   local status=$?
   local restore_failed=false
@@ -729,6 +759,7 @@ replace_bundle "$network_agent_source" "$network_agent_destination"
 echo "Installing CLI into $cli_destination"
 replace_binary "$cli_source" "$cli_destination"
 
+# Clear quarantine attributes from a directory tree.
 clear_quarantine_recursive() {
   local path="$1"
   local label="$2"
@@ -741,6 +772,7 @@ clear_quarantine_recursive() {
   fi
 }
 
+# Clear quarantine attributes from a file.
 clear_quarantine_file() {
   local path="$1"
   local label="$2"

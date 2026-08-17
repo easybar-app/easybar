@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test Homebrew package updates.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -36,6 +37,7 @@ git -C "${tap_dir}" push -qu -u origin main
   --calendar-agent-sha "${calendar_agent_sha}" \
   --network-agent-sha "${network_agent_sha}"
 
+# Assert that text contains an expected value.
 assert_contains() {
   local file="$1"
   local expected="$2"
@@ -46,6 +48,7 @@ assert_contains() {
   fi
 }
 
+# Assert that no local Git identity was configured.
 assert_no_local_git_identity() {
   if git -C "${tap_dir}" config --local --get user.name >/dev/null 2>&1; then
     echo "Homebrew commit helper unexpectedly changed the tap's local Git user.name." >&2
@@ -206,5 +209,3 @@ if "${repo_root}/scripts/release/update-homebrew-packages.sh" \
   echo "Expected invalid repository metadata to fail." >&2
   exit 1
 fi
-
-

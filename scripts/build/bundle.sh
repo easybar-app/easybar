@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Build the distributable application bundle.
 set -Eeuo pipefail
 trap 'echo "bundle failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 
@@ -205,6 +206,7 @@ build_version_file_existed=false
 build_version_state_active=false
 previous_build_version=""
 
+# Return whether a path or symlink exists.
 path_exists() {
   [ -e "$1" ] || [ -L "$1" ]
 }

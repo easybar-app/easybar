@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Verify the structure and metadata of an application bundle.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: scripts/build/verify-bundle.sh [--arch <arm64|x86_64|universal>] [--version <version>] [--bundle-id <id>] [--dist-dir <dir>]" >&2
 }
@@ -98,6 +100,7 @@ network_icon_icns="$network_agent_resources/${network_icon_file}.icns"
 
 cli_bin="$dist_dir/$cli_exec"
 
+# Exit unless a required file exists.
 require_file() {
   local path="$1"
   local label="$2"
@@ -108,6 +111,7 @@ require_file() {
   fi
 }
 
+# Exit unless a required directory exists.
 require_dir() {
   local path="$1"
   local label="$2"
@@ -118,6 +122,7 @@ require_dir() {
   fi
 }
 
+# Exit unless a required executable is available.
 require_executable() {
   local path="$1"
   local label="$2"
@@ -129,6 +134,7 @@ require_executable() {
   fi
 }
 
+# Read a value from a property list.
 plist_value() {
   local plist_path="$1"
   local key="$2"
@@ -136,6 +142,7 @@ plist_value() {
   /usr/libexec/PlistBuddy -c "Print :$key" "$plist_path"
 }
 
+# Assert that a property list contains an expected value.
 assert_plist_value() {
   local plist_path="$1"
   local key="$2"
@@ -149,6 +156,7 @@ assert_plist_value() {
   fi
 }
 
+# Verify that a binary contains the requested architecture.
 verify_architecture() {
   local path="$1"
   local label="$2"

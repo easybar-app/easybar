@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
+# Generate application icons from SVG sources.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: $0 SVG_CONVERT IMAGE_CONVERT DIST_DIR SVG:ICNS [SVG:ICNS ...]" >&2
 }
 
+# Exit unless a required command is available.
 require_command() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "Missing $1. $2" >&2
@@ -14,6 +17,7 @@ require_command() {
   fi
 }
 
+# Exit unless a required file exists.
 require_file() {
   if [ ! -f "$1" ]; then
     echo "Missing $2: $1" >&2
@@ -21,6 +25,7 @@ require_file() {
   fi
 }
 
+# Remove temporary files created by the script.
 cleanup() {
   if [ -n "${tmp_dir:-}" ]; then
     rm -rf "$tmp_dir"
@@ -89,6 +94,7 @@ require_command "$image_convert" "Install ImageMagick or set IMAGE_CONVERT=/path
 require_command sips "This target must run on macOS."
 require_command iconutil "This target must run on macOS."
 
+# Render one application icon variant.
 create_icon_variant() {
   size=$1
   output=$2

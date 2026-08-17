@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test local installation and rollback behavior.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -60,6 +61,7 @@ state_dir=${FAKE_BREW_STATE:-}
 log_file=${FAKE_BREW_LOG:-}
 command=${1:-}
 
+# Record a command invocation in the test log.
 log() {
   if [ -n "$log_file" ]; then
     printf '%s\n' "$*" >>"$log_file"
@@ -148,6 +150,7 @@ EOF_LAUNCHCTL
 
 chmod +x "$fake_bin"/*
 
+# Create an executable test fixture.
 write_executable() {
   local path="$1"
   local output="$2"
@@ -160,6 +163,7 @@ EOF_EXECUTABLE
   chmod +x "$path"
 }
 
+# Create source artifacts used by installation tests.
 write_source_artifacts() {
   local version="$1"
 
@@ -183,6 +187,7 @@ write_source_artifacts() {
   printf 'new network agent\n' >"$dist_dir/EasyBarNetworkAgent.app/source-marker"
 }
 
+# Assert that preflight rejects invalid input.
 assert_preflight_failure() {
   local expected="$1"
   local output
@@ -264,6 +269,7 @@ installer_args=(
   --no-launch
 )
 
+# Assert that rollback restores the previous installation.
 assert_previous_installation_restored() {
   [ "$("$app_dir/EasyBar.app/Contents/MacOS/EasyBar" --version)" = "EasyBar 0.9.0" ]
   [ "$("$bin_dir/easybar" --version)" = "easybar 0.9.0" ]

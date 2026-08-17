@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Verify release archives and metadata.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -7,6 +8,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 project_root="$(cd -- "$script_dir/../.." && pwd -P)"
 source "$script_dir/archive-utils.sh"
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: scripts/release/verify-release.sh [--version <version>] [--arch <arm64|x86_64|universal>] [--bundle-id <id>] [--dist-dir <dir>]" >&2
 }
@@ -81,6 +83,7 @@ package_zip="$dist_dir/EasyBar-$version.zip"
 calendar_agent_zip="$dist_dir/EasyBarCalendarAgent-$version.zip"
 network_agent_zip="$dist_dir/EasyBarNetworkAgent-$version.zip"
 
+# Exit unless a required file exists.
 require_file() {
   local path="$1"
   local label="$2"
@@ -91,6 +94,7 @@ require_file() {
   fi
 }
 
+# Assert that an archive has the expected top-level entries.
 assert_archive_roots() {
   local archive="$1"
   shift
@@ -135,6 +139,7 @@ if ! archive_contains_exact_entry "$package_zip" easybar; then
 fi
 assert_archive_roots "$package_zip" EasyBar.app easybar
 
+# Verify an agent release archive.
 verify_agent_archive() {
   local archive="$1"
   local wrapper="$2"

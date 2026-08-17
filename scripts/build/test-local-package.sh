@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test local package preparation.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR

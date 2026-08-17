@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Prepare a local package for development builds.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: $0 --project-root DIR --output DIR" >&2
 }
@@ -99,6 +101,7 @@ mkdir -p "$output"
 printf 'EasyBar local package workspace\n' >"$workspace_marker"
 
 manifest_stage="$output/.Package.swift.local.$$"
+# Remove temporary files created by the script.
 cleanup() {
   rm -f "$manifest_stage"
 }

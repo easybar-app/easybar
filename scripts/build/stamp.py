@@ -36,6 +36,7 @@ def replace_required(
     description: str,
     expected_count: int = 1,
 ) -> tuple[str, bool]:
+    """Replace one required pattern and return the updated text."""
     updated, count = pattern.subn(lambda _: replacement, text)
 
     if count != expected_count:
@@ -78,6 +79,7 @@ def normalize_bundle_version(version: str) -> str:
 
 
 def stamp_lua_api(path: Path, version: str) -> int:
+    """Stamp version fields in the staged Lua API."""
     try:
         semantic_version_core(version)
     except ValueError as error:
@@ -141,6 +143,7 @@ def stamp_plist(
     icon_file: str,
     bundle_id: str | None,
 ) -> int:
+    """Stamp version metadata in an application property list."""
     if not plist.is_file():
         print(f"Missing Info.plist: {plist}", file=sys.stderr)
         return 1
@@ -184,6 +187,7 @@ def stamp_plist(
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line argument parser."""
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -211,6 +215,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """Run the command-line entry point."""
     args = build_parser().parse_args()
 
     if args.command == "bundle-version":

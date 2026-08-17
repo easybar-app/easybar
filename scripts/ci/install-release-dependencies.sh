@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Install tools required by release workflows.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -13,6 +14,7 @@ if ! command -v brew >/dev/null 2>&1; then
   exit 1
 fi
 
+# Install a command only when it is unavailable.
 install_if_missing() {
   local command_name="$1"
   local formula="$2"

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Test application icon generation and validation.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
@@ -8,6 +9,7 @@ script="$script_dir/app_icons.sh"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+# Assert that invalid input is rejected.
 assert_rejected() {
   local expected="$1"
   shift

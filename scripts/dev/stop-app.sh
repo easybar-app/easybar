@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Stop running EasyBar application processes.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: scripts/dev/stop-app.sh [--app-dir DIR]" >&2
 }
@@ -27,6 +29,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+# Escape text for an extended regular expression.
 escape_extended_regex() {
   sed 's/[][\\.^$*+?(){}|]/\\&/g'
 }

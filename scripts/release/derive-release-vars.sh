@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
+# Derive normalized values for a release workflow.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   echo "Usage: $0 --tag <tag> [--repository <owner/repo>]" >&2
 }
 
+# Write a value to the workflow output file.
 write_output() {
   local name="$1"
   local value="$2"

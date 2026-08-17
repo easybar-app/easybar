@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# Remove a local development installation.
 set -Eeuo pipefail
 
 trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
 
+# Print supported command-line arguments.
 usage() {
   cat >&2 <<'EOF_USAGE'
 Usage: scripts/dev/uninstall-local.sh [options]
@@ -68,6 +70,7 @@ if [ "$(uname -s)" != "Darwin" ]; then
   exit 1
 fi
 
+# Exit unless a required command is available.
 require_command() {
   local command_name="$1"
 
@@ -77,6 +80,7 @@ require_command() {
   fi
 }
 
+# Remove a file, symlink, or directory when present.
 remove_path() {
   local path="$1"
   local parent
@@ -95,6 +99,7 @@ remove_path() {
   sudo rm -rf "$path"
 }
 
+# Restore the saved Homebrew service state.
 restore_homebrew_service_state() {
   local formula="$1"
   local desired_state="$2"
@@ -127,6 +132,7 @@ restore_homebrew_service_state() {
   esac
 }
 
+# Return whether stored Homebrew state is valid.
 is_valid_homebrew_state() {
   case "$1" in
   started | stopped | not-installed) return 0 ;;
@@ -134,6 +140,7 @@ is_valid_homebrew_state() {
   esac
 }
 
+# Load saved Homebrew service state.
 load_homebrew_state() {
   local key
   local value
