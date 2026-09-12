@@ -8,6 +8,9 @@ trap 'rm -rf "$tmp_dir"' EXIT
 mkdir -p "$tmp_dir/kit" "$tmp_dir/package" "$tmp_dir/scripts/dev" "$tmp_dir/scripts/build"
 touch "$tmp_dir/kit/Package.swift"
 cp "$repo_root/Makefile" "$tmp_dir/Makefile"
+# Reuse the bootstrapped modules without downloading them in this fixture.
+ln -s "$repo_root/bin" "$tmp_dir/bin"
+
 
 cat > "$tmp_dir/swift" <<'STUB'
 #!/bin/sh
@@ -26,7 +29,7 @@ cat > "$tmp_dir/scripts/build/bundle.sh" <<'STUB'
 touch "$BUNDLE_MARKER"
 STUB
 chmod +x "$tmp_dir/swift" "$tmp_dir/scripts/dev/local-version.sh" "$tmp_dir/scripts/build/bundle.sh"
-export CALL_LOG="$tmp_dir/calls" STUB_BIN="$tmp_dir/bin" BUNDLE_MARKER="$tmp_dir/bundled"
+export CALL_LOG="$tmp_dir/calls" STUB_BIN="$tmp_dir/swift-bin" BUNDLE_MARKER="$tmp_dir/bundled"
 
 if make -s -C "$tmp_dir" -o prepare-local-package support \
   EASYBAR_KIT_ROOT="$tmp_dir/kit" LOCAL_PACKAGE_DIR="$tmp_dir/package" \

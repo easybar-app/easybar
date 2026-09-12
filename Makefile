@@ -20,15 +20,14 @@ PACKAGE_ZIP := $(DIST_DIR)/EasyBar-$(VERSION).zip
 CALENDAR_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarCalendarAgent-$(VERSION).zip
 NETWORK_AGENT_PACKAGE_ZIP := $(DIST_DIR)/EasyBarNetworkAgent-$(VERSION).zip
 
-LATEST_TAG = $(shell bash -c '. scripts/release/metadata.sh; latest_release_tag . HEAD')
-CURRENT_VERSION = $(if $(LATEST_TAG),$(patsubst v%,%,$(LATEST_TAG)),0.0.0)
-CURRENT_CORE_VERSION = $(firstword $(subst -, ,$(CURRENT_VERSION)))
-
-NEXT_PATCH = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m}.{n}.{p+1}")' "$(CURRENT_CORE_VERSION)")
-NEXT_MINOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m}.{n+1}.0")' "$(CURRENT_CORE_VERSION)")
-NEXT_MAJOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split(".")); print(f"{m+1}.0.0")' "$(CURRENT_CORE_VERSION)")
-
 .DEFAULT_GOAL := help
+
+# renovate: datasource=github-releases depName=gi8lino/dev-tools
+DEV_TOOLS_VERSION ?= v0.7.0
+
+include bin/dev-tools.mk
+include $(call dev-tools-module,tag)
+include $(call dev-tools-module,help)
 
 .PHONY: help build test check check-scripts run support prepare-local-package \
         bundle package release verify verify-release print-package-sha256 \
@@ -36,9 +35,6 @@ NEXT_MAJOR = $(shell python3 -c 'import sys; m,n,p=map(int,sys.argv[1].split("."
         fmt fmt-swift fmt-prettier lint lint-swift lint-prettier \
         clean clean-dist \
         tag-patch tag-minor tag-major push-tags tag
-
-help: ## Display this help.
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z\_0-9-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)
 
 ##@ Build and test
 
@@ -219,22 +215,14 @@ clean-dist: ## Remove distribution output.
 clean: clean-dist ## Remove SwiftPM and distribution output.
 	@rm -rf .build
 
-##@ Tagging
+##@ Tagging aliases
 
-tag-patch: ## Create the next patch tag locally.
-	@git tag -a "v$(NEXT_PATCH)" -m "Release v$(NEXT_PATCH)"
-	@echo "Created tag v$(NEXT_PATCH)"
+tag-patch: patch ## Create the next patch tag locally.
 
-tag-minor: ## Create the next minor tag locally.
-	@git tag -a "v$(NEXT_MINOR)" -m "Release v$(NEXT_MINOR)"
-	@echo "Created tag v$(NEXT_MINOR)"
+tag-minor: minor ## Create the next minor tag locally.
 
-tag-major: ## Create the next major tag locally.
-	@git tag -a "v$(NEXT_MAJOR)" -m "Release v$(NEXT_MAJOR)"
-	@echo "Created tag v$(NEXT_MAJOR)"
+tag-major: major ## Create the next major tag locally.
 
-push-tags: ## Push commits and tags to origin.
-	@git push --follow-tags
+push-tags: push ## Push local tags to origin.
 
-tag: ## Show latest tag.
-	@echo "Latest version: $(LATEST_TAG)"
+tag: current ## Show latest tag.

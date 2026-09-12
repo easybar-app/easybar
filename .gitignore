@@ -3,3 +3,4 @@ dist/
 .swiftpm/
 __pycache__/
 .DS_Store
+bin/.dev-tools/

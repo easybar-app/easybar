@@ -47,6 +47,19 @@ The full documentation is available at [easybar.dev](https://easybar.dev/).
 - [Runtime and troubleshooting](https://easybar.dev/products/easybar/runtime/troubleshooting/)
 - [Development](https://easybar.dev/internals/development/)
 
+## Development helpers
+
+The Makefile uses [dev-tools](https://github.com/gi8lino/dev-tools) v0.7.0 for help and
+semantic-version tagging. The bootstrap is committed in `bin/dev-tools.mk`; Make downloads
+modules and helpers into the ignored `bin/.dev-tools/` cache on first use. This requires
+`curl` and network access initially, and Python 3 to run the helpers.
+
+Run `make help` for available targets. `make tag`, `tag-patch`, `tag-minor`, and `tag-major`
+remain aliases for the shared `current`, `patch`, `minor`, and `major` targets. The shared
+helper selects the highest stable semantic-version tag in the repository and creates
+lightweight tags. `make push-tags` aliases `push` and pushes all local tags only; push
+commits separately with `git push`.
+
 ## License
 
 Licensed under the [Apache License 2.0](./LICENSE).
