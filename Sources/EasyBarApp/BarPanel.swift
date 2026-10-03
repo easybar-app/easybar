@@ -2,6 +2,7 @@ import AppKit
 
 /// Borderless non-activating panel used for the customizable EasyBar window.
 final class BarPanel: NSPanel {
+  /// Produces the context menu for a right-click, optionally including developer actions.
   var contextMenuProvider: ((Bool) -> NSMenu)?
 
   override var canBecomeKey: Bool {

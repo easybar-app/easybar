@@ -6,7 +6,10 @@ import SwiftUI
 /// Hosts the customizable top-edge EasyBar panel.
 @MainActor
 final class BarWindowController: NSWindowController, EasyBarSurfaceController {
+  /// Shared services used to create menus and report frontend lifecycle events.
   private let context: EasyBarSurfaceContext
+
+  /// Observable state that defines the bar's widgets and visual configuration.
   private let presentationModel: EasyBarPresentationModel
 
   /// Creates the fixed top-edge window for one shared EasyBar surface context.

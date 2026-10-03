@@ -4,7 +4,10 @@ import SwiftUI
 
 /// Root SwiftUI view of the customizable EasyBar window.
 struct BarContentView: View {
+  /// Shared runtime state that supplies the current widget surfaces and bar style.
   @ObservedObject var presentationModel: EasyBarPresentationModel
+
+  /// Font applied consistently to every widget rendered in the full-width bar.
   private let globalBarFont = Font.custom("Symbols Nerd Font Mono", size: 13)
 
   var body: some View {
