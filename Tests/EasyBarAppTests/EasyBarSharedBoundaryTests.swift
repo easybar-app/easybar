@@ -9,4 +9,8 @@ final class EasyBarSharedBoundaryTests: XCTestCase {
       ["left", "center", "right"]
     )
   }
+
+  func testFrontendPinsTheSharedIPCContract() {
+    XCTAssertEqual(easyBarIPCProtocolVersion, "2")
+  }
 }
