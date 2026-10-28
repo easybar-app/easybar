@@ -10,6 +10,7 @@ struct BarContentView: View {
   /// Font applied consistently to every widget rendered in the full-width bar.
   private let globalBarFont = Font.custom("Symbols Nerd Font Mono", size: 13)
 
+  /// Composes left, center, and right widget regions using the current bar style.
   var body: some View {
     let style = presentationModel.barStyle
 

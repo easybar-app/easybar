@@ -5,10 +5,12 @@ final class BarPanel: NSPanel {
   /// Produces the context menu for a right-click, optionally including developer actions.
   var contextMenuProvider: ((Bool) -> NSMenu)?
 
+  /// Keeps the bar from becoming the active key window.
   override var canBecomeKey: Bool {
     false
   }
 
+  /// Prevents the bar from becoming the application's main window.
   override var canBecomeMain: Bool {
     false
   }

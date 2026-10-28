@@ -3,6 +3,7 @@ import EasyBarKit
 /// Process entry point for the customizable EasyBar frontend.
 @main
 enum EasyBarAppMain {
+  /// Describes the process identity, default paths, and enabled surfaces.
   static let identity = EasyBarApplicationIdentity(
     displayName: "EasyBar",
     processName: "easybar",

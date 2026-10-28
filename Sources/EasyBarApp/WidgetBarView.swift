@@ -10,6 +10,7 @@ struct WidgetBarView: View {
   /// Logical bar region rendered by this horizontal stack.
   let position: WidgetPosition
 
+  /// Draws the widgets assigned to this bar position in runtime order.
   var body: some View {
     HStack(spacing: 4) {
       ForEach(presentationModel.widgets(at: position)) { widget in

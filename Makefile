@@ -29,7 +29,7 @@ include bin/dev-tools.mk
 include $(call dev-tools-module,tag)
 include $(call dev-tools-module,help)
 
-.PHONY: help build test check check-scripts run support prepare-local-package \
+.PHONY: help build test check check-scripts check-docs run support prepare-local-package \
         bundle package release verify verify-release print-package-sha256 \
         bundle-local update install-local uninstall-local stop restart-app print-local-version \
         fmt fmt-swift fmt-prettier lint lint-swift lint-prettier \
@@ -45,6 +45,7 @@ test: ## Run EasyBar frontend unit tests.
 	@$(SWIFT) test
 
 check-scripts: ## Test build, release archive, and Homebrew package helpers.
+	@scripts/ci/test-check-source-docs.py
 	@scripts/assets/test-app-icons.sh
 	@scripts/build/test-bundle.sh
 	@scripts/build/test-clean.sh
@@ -52,6 +53,7 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/build/test-make-failures.sh
 	@scripts/build/test-stamp.py
 	@scripts/dev/test-install-local.sh
+	@scripts/dev/test-launch-agent.sh
 	@scripts/dev/test-local-version.sh
 	@scripts/dev/test-uninstall-local.sh
 	@scripts/release/test-archive-utils.sh
@@ -60,7 +62,10 @@ check-scripts: ## Test build, release archive, and Homebrew package helpers.
 	@scripts/release/test-metadata.sh
 	@scripts/release/test-package.sh
 
-check: test lint check-scripts ## Run the complete repository verification suite.
+check-docs: ## Check that application and helper declarations are documented.
+	@scripts/ci/check-source-docs.py
+
+check: test lint check-scripts check-docs ## Run the complete repository verification suite.
 
 ##@ Packaging
 
