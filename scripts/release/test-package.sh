@@ -170,3 +170,52 @@ if [ -n "$leftovers" ]; then
   printf '%s\n' "$leftovers" >&2
   exit 1
 fi
+
+# Reject a failed publish without leaving a mix of old and new release archives.
+cat >"$fake_bin/mv" <<'EOF_MV'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "${*: -1}" = "$FAIL_PUBLISH_DESTINATION" ]; then
+  echo "Simulated archive publication failure" >&2
+  exit 1
+fi
+
+exec "$REAL_MV" "$@"
+EOF_MV
+chmod +x "$fake_bin/mv"
+
+if PATH="$fake_bin:$PATH" \
+  FAIL_PUBLISH_DESTINATION="$calendar_archive" \
+  REAL_MV="$(command -v mv)" \
+  "$repo_root/scripts/release/package.sh" \
+  --version 9.8.7-dev.test \
+  --dist-dir "$dist_dir" >/dev/null 2>&1; then
+  echo "Expected archive publication failure" >&2
+  exit 1
+fi
+
+cmp -s "$main_archive" "$tmp_dir/main.expected"
+cmp -s "$calendar_archive" "$tmp_dir/calendar.expected"
+cmp -s "$network_archive" "$tmp_dir/network.expected"
+
+if find "$dist_dir" -maxdepth 1 -name '.easybar-package.*' | grep -q .; then
+  echo "Failed archive publication left a staging directory" >&2
+  exit 1
+fi
+
+# A failed first-time publication must not leave a partial set of archives.
+rm -f "$main_archive" "$calendar_archive" "$network_archive"
+if PATH="$fake_bin:$PATH" \
+  FAIL_PUBLISH_DESTINATION="$calendar_archive" \
+  REAL_MV="$(command -v mv)" \
+  "$repo_root/scripts/release/package.sh" \
+  --version 9.8.7-dev.test \
+  --dist-dir "$dist_dir" >/dev/null 2>&1; then
+  echo "Expected first-time archive publication failure" >&2
+  exit 1
+fi
+
+[ ! -e "$main_archive" ]
+[ ! -e "$calendar_archive" ]
+[ ! -e "$network_archive" ]

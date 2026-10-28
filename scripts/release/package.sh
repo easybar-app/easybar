@@ -186,9 +186,59 @@ for archive in \
   fi
 done
 
-mv -f "$package_zip_stage" "$package_zip"
-mv -f "$calendar_agent_zip_stage" "$calendar_agent_zip"
-mv -f "$network_agent_zip_stage" "$network_agent_zip"
+# Publish all archives as one logical transaction, restoring earlier files on failure.
+publish_archives() {
+  local staged_archives=(
+    "$package_zip_stage"
+    "$calendar_agent_zip_stage"
+    "$network_agent_zip_stage"
+  )
+  local published_archives=(
+    "$package_zip"
+    "$calendar_agent_zip"
+    "$network_agent_zip"
+  )
+  local backups_dir="$stage_root/previous"
+  local index
+  local target
+  local backup
+  local rollback_failed=false
+
+  mkdir -p "$backups_dir"
+
+  # Capture every previous archive before replacing any of them.
+  for index in "${!published_archives[@]}"; do
+    target="${published_archives[$index]}"
+    if [ -e "$target" ] || [ -L "$target" ]; then
+      cp -p "$target" "$backups_dir/$index"
+    fi
+  done
+
+  for index in "${!published_archives[@]}"; do
+    target="${published_archives[$index]}"
+    if mv -f "${staged_archives[$index]}" "$target"; then
+      continue
+    fi
+
+    echo "Could not publish release archive: $target" >&2
+    # Roll back every archive that was successfully replaced.
+    for ((index -= 1; index >= 0; index--)); do
+      target="${published_archives[$index]}"
+      backup="$backups_dir/$index"
+      if [ -e "$backup" ]; then
+        cp -p "$backup" "$target" || rollback_failed=true
+      else
+        rm -f "$target" || rollback_failed=true
+      fi
+    done
+    if [ "$rollback_failed" = true ]; then
+      echo "Could not completely restore previous release archives" >&2
+    fi
+    return 1
+  done
+}
+
+publish_archives
 
 echo "Created $package_zip"
 echo "Created $calendar_agent_zip"
