@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Provide release metadata validation helpers.
-set -Eeuo pipefail
-
-trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
+# Caller scripts configure their own shell options and error traps.
 
 # Returns success for release versions accepted by EasyBar tags and package publishing.
 is_valid_release_version() {

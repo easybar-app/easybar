@@ -6,6 +6,17 @@ trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COM
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 source "$script_dir/metadata.sh"
+# Sourcing a function library must not change the caller's shell settings or traps.
+(
+  set +e +u +o pipefail
+  trap 'true' ERR
+  original_trap="$(trap -p ERR)"
+  source "$script_dir/metadata.sh"
+  [ "$(trap -p ERR)" = "$original_trap" ]
+  [[ "$-" != *e* && "$-" != *u* ]]
+  ! shopt -qo pipefail
+)
+
 
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT

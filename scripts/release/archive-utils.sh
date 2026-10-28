@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Provide archive inspection helpers for release scripts.
-set -Eeuo pipefail
-
-trap 'echo "$(basename "${BASH_SOURCE[0]}") failed at line ${LINENO}: ${BASH_COMMAND}" >&2' ERR
+# Caller scripts configure their own shell options and error traps.
 
 # Returns success when a ZIP archive contains an entry with the exact requested path.
 archive_contains_exact_entry() {
