@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import plistlib
 import re
+import stat
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -27,6 +30,26 @@ SEMVER_PATTERN = re.compile(
     r"(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?"
     r"(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$"
 )
+
+
+def replace_file_atomically(path: Path, contents: bytes) -> None:
+    """Replace a staged file without exposing partially written contents."""
+    temporary_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="wb", prefix=f".{path.name}.", suffix=".tmp",
+            dir=path.parent, delete=False
+        ) as temporary:
+            temporary_path = Path(temporary.name)
+            temporary.write(contents)
+            temporary.flush()
+            os.fsync(temporary.fileno())
+
+        os.chmod(temporary_path, stat.S_IMODE(path.stat().st_mode))
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path is not None:
+            temporary_path.unlink(missing_ok=True)
 
 
 def replace_required(
@@ -126,7 +149,7 @@ def stamp_lua_api(path: Path, version: str) -> int:
         return 1
 
     try:
-        path.write_text(text, encoding="utf-8")
+        replace_file_atomically(path, text.encode("utf-8"))
     except OSError as error:
         print(
             f"Could not write staged Lua API stub {path}: {error}", file=sys.stderr)
@@ -176,9 +199,8 @@ def stamp_plist(
     values["CFBundleIconFile"] = icon_file
 
     try:
-        with plist.open("wb") as handle:
-            plistlib.dump(values, handle, fmt=plistlib.FMT_XML,
-                          sort_keys=False)
+        contents = plistlib.dumps(values, fmt=plistlib.FMT_XML, sort_keys=False)
+        replace_file_atomically(plist, contents)
     except OSError as error:
         print(f"Could not write Info.plist {plist}: {error}", file=sys.stderr)
         return 1

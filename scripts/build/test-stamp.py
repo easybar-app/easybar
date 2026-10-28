@@ -8,6 +8,7 @@ import io
 import plistlib
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 import stamp
@@ -94,6 +95,41 @@ class StampTests(unittest.TestCase):
 
             self.assertEqual(result, 1)
             self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_lua_api_write_failure_keeps_original_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "easybar_api.lua"
+            original = (
+                "-- EasyBar Lua API stub version: dev\n"
+                "---@field version string EasyBar application version (`dev`).\n"
+                'EasyBar.version = "dev"\n'
+            )
+            path.write_text(original, encoding="utf-8")
+            with mock.patch.object(stamp.os, "replace", side_effect=OSError("disk error")):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(stamp.stamp_lua_api(path, "1.2.3"), 1)
+
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+            self.assertEqual(sorted(item.name for item in Path(directory).iterdir()), [path.name])
+
+    def test_plist_write_failure_keeps_original_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "Info.plist"
+            original = plistlib.dumps({"CFBundleIdentifier": "original"})
+            path.write_bytes(original)
+            with mock.patch.object(stamp.os, "replace", side_effect=OSError("disk error")):
+                with contextlib.redirect_stderr(io.StringIO()):
+                    self.assertEqual(stamp.stamp_plist(
+                        plist=path,
+                        version="1.2.3",
+                        executable="EasyBar",
+                        name="EasyBar",
+                        icon_file="EasyBar",
+                        bundle_id=None,
+                    ), 1)
+
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(sorted(item.name for item in Path(directory).iterdir()), [path.name])
 
     def test_stamps_plist_with_numeric_bundle_versions(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
