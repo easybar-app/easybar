@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/easybar-app/easybar-kit",
       "state" : {
-        "revision" : "d629559523a78acdc5af8996efc7da2460b0184b",
-        "version" : "0.6.0"
+        "revision" : "946b4a350ebe5d13b4a4f87ed8d83356e49409a4",
+        "version" : "0.7.2"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/gi8lino/SwiftTOMLEdit.git",
       "state" : {
-        "revision" : "c9c26d61372ba3825a591ff26d4118396b347486",
-        "version" : "0.0.5"
+        "revision" : "59e1caf5055019a3669bb2d10f45ec17730a96a0",
+        "version" : "0.2.0"
       }
     }
   ],
